@@ -1,0 +1,7 @@
+{
+  "name": "Flowerix",
+  "description": "A digital gardening journal to track your plants, identify species using Flowerix, and log their growth.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
