@@ -49,7 +49,7 @@ import { ProfessorView } from './components/views/ProfessorView';
 import { PricingView } from './components/views/PricingView';
 
 // --- Constants ---
-const APP_VERSION = 'v1.4.Fixes3';
+const APP_VERSION = 'v0.9112725.1';
 
 // --- Helper: Local Storage & Data Management ---
 const SETTINGS_KEY = 'mygardenview_settings_v1';
