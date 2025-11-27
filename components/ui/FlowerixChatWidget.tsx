@@ -3,8 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from '../Icons';
 import { GARDENER_CONFIG } from '../../gardener_config';
 import { Plant, GardenLogItem, TimelineItem, ModulesConfig } from '../../types';
-import { GoogleGenAI } from "@google/genai";
 import { trackUsage } from '../../services/usageService';
+import { chatText } from '../../services/geminiService';
 
 interface FlowerixChatWidgetProps {
     plants: Plant[];
@@ -31,7 +31,7 @@ interface Message {
 
 type PersonaType = 'expert' | 'junior' | 'professor' | 'architect';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Gemini calls are routed via Netlify Function; no client API keys
 
 export const FlowerixChatWidget: React.FC<FlowerixChatWidgetProps> = ({ 
     plants, gardenLogs, lang, 
@@ -206,12 +206,7 @@ ${chatHistoryStr}
 User: ${userMessage}
 Model:`;
 
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: { parts: [{ text: prompt }] },
-            });
-
-            const outputText = response.text || (lang === 'nl' ? "Hmm, ik kan even niet nadenken." : "Hmm, I can't think right now.");
+            const outputText = await chatText(prompt) || (lang === 'nl' ? "Hmm, ik kan even niet nadenken." : "Hmm, I can't think right now.");
             
             // Track tokens (Chat typically doesn't use images in this widget flow currently)
             trackUsage(prompt, outputText, 0);
@@ -230,12 +225,7 @@ Model:`;
             const historyStr = messages.map(m => `${m.sender}: ${m.text}`).join('\n');
             const langName = lang === 'nl' ? 'Dutch' : 'English';
             const prompt = `Summarize this conversation into concrete action points (bullet points). Language: ${langName}.\n\nConversation:\n${historyStr}`;
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: { parts: [{ text: prompt }] },
-            });
-            
-            const result = response.text || "Error.";
+            const result = await chatText(prompt) || "Error.";
             setSummaryText(result);
             trackUsage(prompt, result, 0);
 
@@ -253,13 +243,10 @@ Model:`;
             if (!lastFlora) { setIsLoading(false); return; }
             const langName = lang === 'nl' ? 'Dutch' : 'English';
             const prompt = `Generate 1 logical, short follow-up question the user might ask based on your last answer: "${lastFlora.text}". Return ONLY the question. Language: ${langName}.`;
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: { parts: [{ text: prompt }] },
-            });
-            if (response.text) {
-                setInput(response.text.trim());
-                trackUsage(prompt, response.text, 0);
+            const follow = await chatText(prompt);
+            if (follow) {
+                setInput(follow.trim());
+                trackUsage(prompt, follow, 0);
             }
         } catch (e) { console.error(e); } finally { setIsLoading(false); }
     };

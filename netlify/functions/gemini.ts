@@ -156,6 +156,16 @@ export const handler = async (event: any) => {
       return { statusCode: 200, body: JSON.stringify({ summary, sources }) };
     }
 
+    if (action === "chat") {
+      const prompt = String(body.prompt || "");
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: { parts: [{ text: prompt }] }
+      });
+      const text = response.text || "";
+      return { statusCode: 200, body: JSON.stringify({ text }) };
+    }
+
     return { statusCode: 400, body: JSON.stringify({ error: "Error: Unknown action" }) };
   } catch (e: any) {
     return { statusCode: 500, body: JSON.stringify({ error: `Error: ${e?.message || "Server failure"}` }) };

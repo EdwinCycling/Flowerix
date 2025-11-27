@@ -133,3 +133,15 @@ export const askPlantProfessor = async (base64Image: string, question: string, l
     return null;
   }
 };
+
+export const chatText = async (prompt: string): Promise<string> => {
+  try {
+    const data = await postGemini({ action: 'chat', prompt });
+    const text = (data && data.text) ? data.text : "";
+    trackUsage('chat', text, 0);
+    return text;
+  } catch (e) {
+    console.error("Chat Error", e);
+    return "";
+  }
+};
