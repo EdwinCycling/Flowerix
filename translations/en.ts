@@ -802,4 +802,13 @@ export const en = {
   loading: "Loading...",
   syncing_database: "Syncing Database...",
   flora_disclaimer: "Flora is an AI and can make mistakes. Flowerix is not liable for advice regarding edible or medicinal use.",
+  settings_tab_usage_payment: "Usage / Subscription",
+  settings_tab_export: "Export",
+  export_info: "We create an export stored on your local device. PDF includes plants and gardens with photos; CSV contains text-only data.",
+  export_pdf: "Export PDF",
+  export_csv: "Export CSV",
+  view_usage: "View Usage",
+  modules_help_en: "Here you can turn modules on/off that you (temporarily) do not use. Navigation adapts to your preferences. We do not delete any data in the background; you can re-activate a module at any time.",
+  no_garden_log_photos: "No Garden Log photos found. We only show photos from your garden log.",
+  activate_garden_logs: "Enable Garden Log",
 };

@@ -18,6 +18,7 @@ interface MergeImage {
     url: string;
     date: string;
     selected: boolean;
+    plantName?: string;
 }
 
 type LayoutType = 'grid' | 'masonry' | 'polaroid' | 'film' | 'circle' | 'honeycomb' | 'strips' | 'focus' | 'heart';
@@ -27,6 +28,9 @@ export const PhotoMergeModal: React.FC<PhotoMergeModalProps> = ({ isOpen, onClos
     const [images, setImages] = useState<MergeImage[]>([]);
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(0);
+    const pageSize = 5;
 
     // Config State
     const [layout, setLayout] = useState<LayoutType>('grid');
@@ -40,11 +44,11 @@ export const PhotoMergeModal: React.FC<PhotoMergeModalProps> = ({ isOpen, onClos
             
             plants.forEach(p => {
                 if (p.imageUrl) {
-                    allImages.push({ id: `p_${p.id}`, url: p.imageUrl, date: p.dateAdded, selected: false });
+                    allImages.push({ id: `p_${p.id}`, url: p.imageUrl, date: p.dateAdded, selected: false, plantName: p.name });
                 }
                 p.logs.forEach(l => {
                     if (l.imageUrl) {
-                        allImages.push({ id: `pl_${l.id}`, url: l.imageUrl, date: l.date, selected: false });
+                        allImages.push({ id: `pl_${l.id}`, url: l.imageUrl, date: l.date, selected: false, plantName: p.name });
                     }
                 });
             });
@@ -64,6 +68,8 @@ export const PhotoMergeModal: React.FC<PhotoMergeModalProps> = ({ isOpen, onClos
             setLayout('grid');
             setBgColor('#ffffff');
             setSpacing(20);
+            setSearch('');
+            setPage(0);
         }
     }, [isOpen, plants, gardenLogs]);
 
@@ -493,6 +499,9 @@ export const PhotoMergeModal: React.FC<PhotoMergeModalProps> = ({ isOpen, onClos
     }
 
     const selectedCount = images.filter(i => i.selected).length;
+    const filtered = images.filter(i => !search || (i.plantName || '').toLowerCase().includes(search.toLowerCase()));
+    const pageCount = Math.ceil(filtered.length / pageSize);
+    const paged = filtered.slice(page * pageSize, page * pageSize + pageSize);
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -520,8 +529,13 @@ export const PhotoMergeModal: React.FC<PhotoMergeModalProps> = ({ isOpen, onClos
                                 <p>{t('no_photos')}</p>
                             </div>
                         ) : (
+                            <div>
+                            <div className="mb-3 flex items-center gap-2">
+                                <input value={search} onChange={(e)=>{ setSearch(e.target.value); setPage(0); }} placeholder={lang==='nl'?'Zoek plant':'Search plant'} className="flex-1 px-3 py-2 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700" />
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{filtered.length} fotos</div>
+                            </div>
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                                {images.map(img => (
+                                {paged.map(img => (
                                     <div 
                                         key={img.id} 
                                         onClick={() => toggleSelection(img.id)}
@@ -541,6 +555,12 @@ export const PhotoMergeModal: React.FC<PhotoMergeModalProps> = ({ isOpen, onClos
                                         </div>
                                     </div>
                                 ))}
+                            </div>
+                            <div className="flex items-center justify-center gap-2 mt-3">
+                                <button onClick={()=> setPage(Math.max(0, page-1))} disabled={page===0} className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-sm disabled:opacity-50">{t('back')}</button>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">{page+1}/{Math.max(1,pageCount)}</span>
+                                <button onClick={()=> setPage(Math.min(pageCount-1, page+1))} disabled={page>=pageCount-1} className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-sm disabled:opacity-50">{t('next')}</button>
+                            </div>
                             </div>
                         )
                     )}

@@ -13,6 +13,7 @@ interface AISparkProps {
 export const AISpark: React.FC<AISparkProps> = ({ content, isMultiline, onAskFlora, t, limitAI }) => {
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const [alignRight, setAlignRight] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -49,14 +50,20 @@ export const AISpark: React.FC<AISparkProps> = ({ content, isMultiline, onAskFlo
     return (
         <div className="relative inline-block ml-2 align-middle" ref={wrapperRef}>
             <button 
-                onClick={() => setIsOpen(!isOpen)} 
+                onClick={() => {
+                    const rect = wrapperRef.current?.getBoundingClientRect();
+                    const menuWidth = 192; // w-48
+                    const viewportWidth = window.innerWidth;
+                    setAlignRight(Boolean(rect && rect.right + menuWidth > viewportWidth));
+                    setIsOpen(!isOpen);
+                }} 
                 className="text-indigo-500 hover:text-indigo-600 transition-colors p-1 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
             >
                 <Icons.Sparkles className="w-4 h-4" />
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className={`absolute top-full ${alignRight ? 'right-0' : 'left-0'} mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-in zoom-in-95 duration-200`}>
                     <button 
                         onClick={() => handleAction('tell_more')}
                         className="w-full text-left px-4 py-3 text-xs font-bold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"

@@ -40,9 +40,9 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ t, lang, setLang, onOp
     const scrollerRef = useRef<HTMLDivElement>(null);
     const introImages = [10,9,8,7,6,5,4].map(n => "/intro/" + encodeURIComponent(`plant (${n}).jpg`));
     const { scrollYProgress } = useScroll();
-    const ySlow = useTransform(scrollYProgress, [0, 1], [0, -50]);
-    const yMedium = useTransform(scrollYProgress, [0, 1], [0, -120]);
-    const yFast = useTransform(scrollYProgress, [0, 1], [0, -200]);
+    const ySlow = useTransform(scrollYProgress, [0, 1], [0, -20]);
+    const yMedium = useTransform(scrollYProgress, [0, 1], [0, -40]);
+    const yFast = useTransform(scrollYProgress, [0, 1], [0, -60]);
     const [scrolled, setScrolled] = useState(false);
     const pillars = [
         { titleKey: 'pillars_ai_title', descKey: 'pillars_ai_desc' },
@@ -471,7 +471,7 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ t, lang, setLang, onOp
                         <p className="text-base md:text-lg text-gray-400 max-w-3xl mx-auto">{t('home_intro_text')}</p>
                     </div>
 
-                    <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-8" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                    <motion.div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                         {pillars.map((p, i) => (
                             <div key={p.titleKey} className="relative" style={{ perspective: '1200px' }}>
                                 <div
@@ -496,7 +496,7 @@ export const WelcomeView: React.FC<WelcomeViewProps> = ({ t, lang, setLang, onOp
                         ))}
                     </motion.div>
 
-                    <motion.div className="grid md:grid-cols-12 gap-4" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+                    <motion.div className="relative z-0 mt-4 grid md:grid-cols-12 gap-4" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                         {parallaxSources.map((src, idx) => (
                             <motion.div key={idx} className={`${idx % 3 === 0 ? 'md:col-span-5' : idx % 3 === 1 ? 'md:col-span-4' : 'md:col-span-3'} col-span-12 overflow-hidden rounded-3xl border border-white/10`}
                                 style={{ y: idx % 3 === 0 ? ySlow : idx % 3 === 1 ? yMedium : yFast }}>

@@ -42,17 +42,9 @@ export const SeasonsModal: React.FC<SeasonsModalProps> = ({ isOpen, onClose, pla
 
     const allImages = React.useMemo(() => {
         const imgs: { url: string, date: string }[] = [];
-        plants.forEach(p => {
-            if (p.imageUrl) imgs.push({ url: p.imageUrl, date: p.dateAdded });
-            p.logs.forEach(l => {
-                if (l.imageUrl) imgs.push({ url: l.imageUrl, date: l.date });
-            });
-        });
-        gardenLogs.forEach(l => {
-            if (l.imageUrl) imgs.push({ url: l.imageUrl, date: l.date });
-        });
+        gardenLogs.forEach(l => { if (l.imageUrl) imgs.push({ url: l.imageUrl, date: l.date }); });
         return imgs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [plants, gardenLogs]);
+    }, [gardenLogs]);
 
     const handleSelect = (url: string) => {
         setSelectedImage(url);
@@ -148,13 +140,17 @@ export const SeasonsModal: React.FC<SeasonsModalProps> = ({ isOpen, onClose, pla
                                 </label>
                             </div>
                             
-                            {allImages.length > 0 && (
+                            {allImages.length > 0 ? (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                                     {allImages.map((img, idx) => (
                                         <div key={idx} onClick={() => handleSelect(img.url)} className="aspect-square rounded-lg overflow-hidden cursor-pointer border-2 border-transparent hover:border-blue-500 relative">
                                             <img src={img.url} className="w-full h-full object-cover" alt="Gallery" />
                                         </div>
                                     ))}
+                                </div>
+                            ) : (
+                                <div className="text-sm text-gray-600 dark:text-gray-300 text-center">
+                                    {t('no_garden_log_photos')} <button onClick={() => { window.dispatchEvent(new Event('openModulesTab')); onClose(); }} className="text-blue-600 dark:text-blue-400 underline">{t('activate_garden_logs')}</button>
                                 </div>
                             )}
                         </div>

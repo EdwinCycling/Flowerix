@@ -79,6 +79,13 @@ export const MyGardenView: React.FC<MyGardenViewProps> = ({
         }
     }, [selectedGardenAreaId]);
 
+    React.useEffect(() => {
+        const shouldLock = Boolean(isAddingArea || previewPlant);
+        if (shouldLock) document.body.style.overflow = 'hidden';
+        else document.body.style.overflow = '';
+        return () => { document.body.style.overflow = ''; };
+    }, [isAddingArea, previewPlant]);
+
     return (
         <div className="h-full flex flex-col transition-colors pb-20">
              <div className="flex-1 overflow-y-auto flex flex-col">
@@ -122,7 +129,7 @@ export const MyGardenView: React.FC<MyGardenViewProps> = ({
                                 </div>
                             )}
 
-                            <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                            <div className="absolute top-4 right-4 z-10 flex items-center gap-2 flex-wrap justify-end max-w-[75%]">
                                 <button 
                                    onClick={() => setShowThumbnails(!showThumbnails)} 
                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors shadow-sm backdrop-blur-sm ${showThumbnails ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 border border-green-200 dark:border-green-800' : 'bg-white/90 text-gray-700 dark:bg-gray-800/90 dark:text-gray-200 border border-transparent'}`}
@@ -172,7 +179,7 @@ export const MyGardenView: React.FC<MyGardenViewProps> = ({
                                          >
                                             {highlightPlantId === plant.id ? (
                                                 <div className="flex flex-col items-center animate-in zoom-in duration-300">
-                                                    <div className="w-32 h-32 rounded-xl overflow-hidden border-4 border-yellow-400 shadow-2xl bg-white mb-2 relative">
+                                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-xl overflow-hidden border-4 border-yellow-400 shadow-2xl bg-white mb-2 relative">
                                                         {plant.imageUrl ? (
                                                             <img src={plant.imageUrl} className="w-full h-full object-cover" alt={plant.name} />
                                                         ) : (
@@ -190,7 +197,7 @@ export const MyGardenView: React.FC<MyGardenViewProps> = ({
                                                             <img src={plant.imageUrl} className="w-full h-full object-cover" alt={plant.name} />
                                                         </div>
                                                     ) : (
-                                                        <Icons.MapPin className="w-10 h-10 text-green-600 fill-white dark:text-green-400 dark:fill-gray-800 drop-shadow-lg" />
+                                                        <Icons.MapPin className="w-8 h-8 md:w-10 md:h-10 text-green-600 fill-white dark:text-green-400 dark:fill-gray-800 drop-shadow-lg" />
                                                     )}
                                                     
                                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-30">

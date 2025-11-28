@@ -19,6 +19,7 @@ interface FlowerixChatWidgetProps {
     onAddToNotebook: (item: TimelineItem) => void;
     chatTrigger?: { text: string, timestamp: number } | null;
     modules: ModulesConfig;
+    disableFab?: boolean;
 }
 
 interface Message {
@@ -36,7 +37,7 @@ type PersonaType = 'expert' | 'junior' | 'professor' | 'architect';
 export const FlowerixChatWidget: React.FC<FlowerixChatWidgetProps> = ({ 
     plants, gardenLogs, lang, 
     isOpen, setIsOpen, isDocked, setIsDocked, width, setWidth, onAddToNotebook,
-    chatTrigger, modules
+    chatTrigger, modules, disableFab
 }) => {
     const [input, setInput] = useState('');
     const [messages, setMessages] = useState<Message[]>([]);
@@ -443,13 +444,13 @@ Model:`;
                     className={isDocked 
                         ? `fixed top-0 right-0 h-full bg-white dark:bg-gray-900 shadow-2xl flex flex-col z-[60] border-l border-gray-200 dark:border-gray-700 transition-none`
                         : (isMobile 
-                            ? `fixed inset-0 h-[100vh] w-[100vw] bg-white dark:bg-gray-900 shadow-2xl flex flex-col z-[100] border-none rounded-none`
+                            ? `fixed inset-0 h-[100dvh] w-[100vw] bg-white dark:bg-gray-900 shadow-2xl flex flex-col z-[100] border-none rounded-none`
                             : `fixed bottom-20 right-4 max-h-[90vh] h-[75vh] md:h-[55vh] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-bottom-10 zoom-in-95 duration-300`)
                     }
                     style={{ 
                         width: isMobile && !isDocked ? '100vw' : `${width}px`, 
                         maxWidth: isDocked ? '100vw' : (isMobile ? '100vw' : '90vw'),
-                        height: isDocked ? '100%' : (isMobile ? '100vh' : undefined)
+                        height: isDocked ? '100%' : (isMobile ? '100dvh' : undefined)
                     }}
                 >
                     {/* Resize Handle (Left Edge) - Visible mainly on Desktop when Docked */}
@@ -652,7 +653,7 @@ Model:`;
             )}
 
             {/* FAB - Show when closed, regardless of dock state */}
-            {!isOpen && (
+            {!isOpen && !disableFab && (
                 <button
                     onClick={() => setIsOpen(true)}
                     className="fixed bottom-4 right-4 md:bottom-20 md:right-6 w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 z-50 hover:scale-110 active:scale-95 bg-green-600 text-white hover:bg-green-700"

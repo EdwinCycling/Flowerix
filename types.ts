@@ -160,6 +160,7 @@ export interface WeatherData {
     };
     forecast: DailyWeather[];
     history: DailyWeather[]; // Last 28 days
+    updatedAt?: string;
 }
 
 export interface SocialComment {

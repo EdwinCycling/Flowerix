@@ -4,12 +4,12 @@ import ReactDOM from 'react-dom/client';
 import { Plant, LogItem, ViewState, AISuggestion, GardenArea, PlantLocation, WeatherData, HomeLocation, SocialPost, GardenLogItem, DashboardTab, SlideshowConfig, AnalysisResult, TempUnit, LengthUnit, TimelineItem, WindUnit, TimeFormat, SocialComment, ModulesConfig } from './types';
 import { identifyPlant, generateDefaultDescription, searchWikiImages, validateImageContent } from './services/geminiService';
 import { fetchWeather, fetchWeatherForDate } from './services/weatherService';
-import { generatePlantPDF, generateFullExport } from './services/pdfService';
+import { generatePlantPDF, generateFullExport, generateSummaryPDF } from './services/pdfService';
 import { compressImage, CompressionMode } from './services/imageService';
 import { uploadPlantImage, deletePlantImage, resolveImageUrl } from './services/storageService';
 import { translations, Language } from './translations';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { getUsageStats } from './services/usageService';
+import { getUsageStats, trackDbLoad } from './services/usageService';
 import { supabase } from './supabaseClient';
 
 // --- Component Imports ---
@@ -49,7 +49,7 @@ import { PricingView } from './components/views/PricingView';
 import { PRICING_CONFIG } from './pricingConfig';
 
 // --- Constants ---
-const APP_VERSION = 'v0.91128.1';
+const APP_VERSION = 'v0.91128.2';
 
 // --- Helper: Local Storage & Data Management ---
 const SETTINGS_KEY = 'mygardenview_settings_v1';
@@ -434,6 +434,12 @@ const MainContent: React.FC = () => {
           setIsLoadingData(false);
       }
   };
+  useEffect(() => {
+      // track DB load each time data is fetched successfully
+      if (!isLoadingData && user) {
+          (async () => { try { await trackDbLoad(user.id); } catch {} })();
+      }
+  }, [isLoadingData, user]);
 
   // Initialization
   useEffect(() => {
@@ -538,6 +544,33 @@ const MainContent: React.FC = () => {
           if (view !== 'WELCOME' && view !== 'WAITLIST') setView('WELCOME');
       }
   }, [user, view]);
+
+  useEffect(() => {
+      const onExportPDF = () => { if (generateFullExport(plants, gardenLogs, lang, t)) showToast(t('pdf_downloaded')); else alert(t('pdf_error')); };
+      const onExportCSV = () => {
+          try {
+              const esc = (s: string) => {
+                  const v = s || '';
+                  return '"' + v.replace(/"/g, '""') + '"';
+              };
+              const rows: string[] = [];
+              rows.push('Type,Title,Description,Date');
+              plants.forEach(p => {
+                  rows.push(`PLANT,${esc(p.name)},${esc(p.description || '')},${p.dateAdded || ''}`);
+                  p.logs.forEach(l => rows.push(`PLANT_LOG,${esc(l.title)},${esc(l.description || '')},${l.date}`));
+              });
+              gardenLogs.forEach(l => rows.push(`GARDEN_LOG,${esc(l.title)},${esc(l.description || '')},${l.date}`));
+              const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url; a.download = 'flowerix_export.csv'; a.click();
+              URL.revokeObjectURL(url);
+          } catch (e) { alert('Error: CSV'); }
+      };
+      window.addEventListener('exportPDF', onExportPDF);
+      window.addEventListener('exportCSV', onExportCSV);
+      return () => { window.removeEventListener('exportPDF', onExportPDF); window.removeEventListener('exportCSV', onExportCSV); };
+  }, [plants, gardenLogs, lang]);
 
   const handleFetchWeather = async (force = false) => {
       if (!homeLocation || !useWeather) { setWeather(null); return; }
@@ -1475,7 +1508,6 @@ const MainContent: React.FC = () => {
             <Menu 
                 isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} setView={setView} setDashboardTab={setDashboardTab} 
                 setShowLocationModal={setShowLocationModal}
-                handleExportData={() => { if(generateFullExport(plants, gardenLogs, lang, t)) showToast(t('pdf_downloaded')); else alert(t('pdf_error')); }}
                 darkMode={darkMode} setDarkMode={setDarkMode} lang={lang} setLang={setLang} t={t} 
                 onSignOut={signOut}
                 modules={modules}
@@ -1556,7 +1588,7 @@ const MainContent: React.FC = () => {
                             onOpenPwaInfo={openPwaInfo}
                         />;
                     case 'PRICING':
-                        return <PricingView onBack={() => setView('DASHBOARD')} t={t} />;
+                        return <PricingView onBack={() => setView('DASHBOARD')} onOpenUsage={() => { setView('SETTINGS'); setTimeout(() => { window.dispatchEvent(new Event('openUsageTab')); }, 0); }} t={t} />;
                     case 'WEATHER_DETAILS':
                         return <WeatherDetailsView 
                             weather={weather} homeLocation={homeLocation} tempUnit={tempUnit} lengthUnit={lengthUnit} 
@@ -1665,13 +1697,21 @@ const MainContent: React.FC = () => {
                 onAddToNotebook={handleAddNotebookEntry}
                 chatTrigger={chatTrigger}
                 modules={modules}
+                disableFab={(() => { const isMobile = typeof window !== 'undefined' && window.innerWidth < 768; const isAnyModalOpen = showLocationModal || webImagesModal.isOpen || summaryModal.isOpen || infoModal.isOpen || confirmModal.isOpen || isValidatingImage || showEditPlantModal || isMenuOpen || showSlideshowConfig || showPhotoMergeModal || showPhotoOptimizeModal || showPhotoTimelapseModal || showSeasonsModal || restrictionModalOpen || premiumModalOpen; return isMobile && isAnyModalOpen; })()}
             />
         )}
 
         <ConfirmationModal isOpen={confirmModal.isOpen} title={confirmModal.title} message={confirmModal.message} onConfirm={confirmModal.onConfirm} onCancel={confirmModal.onCancel ? confirmModal.onCancel : undefined} confirmText={confirmModal.confirmText} cancelText={confirmModal.cancelText} />
         <WebImagesModal isOpen={webImagesModal.isOpen} loading={webImagesModal.loading} images={webImagesModal.images} onClose={() => setWebImagesModal(prev => ({...prev, isOpen: false}))} t={t} />
         <LocationPickerModal isOpen={showLocationModal} onClose={() => setShowLocationModal(false)} homeLocation={homeLocation} setHomeLocation={updateHomeLocation} showToast={showToast} t={t} />
-        <SummaryModal isOpen={summaryModal.isOpen} content={summaryModal.content} onClose={() => setSummaryModal(prev => ({...prev, isOpen: false}))} onCopy={() => { navigator.clipboard.writeText(summaryModal.content); showToast(t('copy_success')); }} t={t} />
+        <SummaryModal 
+            isOpen={summaryModal.isOpen} 
+            content={summaryModal.content} 
+            onClose={() => setSummaryModal(prev => ({...prev, isOpen: false}))} 
+            onCopy={() => { navigator.clipboard.writeText(summaryModal.content); showToast(t('copy_success')); }} 
+            onDownloadPdf={() => { if (generateSummaryPDF(summaryModal.content, lang, t)) showToast(t('pdf_downloaded')); else alert(t('pdf_error')); }} 
+            t={t} 
+        />
         <AppReportModal isOpen={infoModal.isOpen} type={infoModal.type} onClose={() => setInfoModal(prev => ({...prev, isOpen: false}))} t={t} appVersion={APP_VERSION} />
         <EditPlantModal isOpen={showEditPlantModal} onClose={() => setShowEditPlantModal(false)} editPlantData={editPlantData} setEditPlantData={setEditPlantData} handleSave={handleSaveEditPlant} handleImageUpload={(e) => handleImageUpload(e, (b64) => setEditPlantData(prev => ({...prev, imageUrl: b64})), 'high')} t={t} />
         

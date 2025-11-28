@@ -75,6 +75,11 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({ weather, homeLocat
                                     <span className="text-lg md:text-xl font-bold">{formatTemp(weather.current.temperature)}°{tempUnit}</span>
                                     <span className="text-xs opacity-90 line-clamp-1">{getWeatherDesc(weather.current.weatherCode)}</span>
                                 </div>
+                                {weather.updatedAt && (
+                                    <div className="text-[9px] opacity-75">
+                                        {(lang === 'nl' ? 'Laatste update' : 'Updated') + ': ' + new Date(weather.updatedAt).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="flex items-center gap-2">

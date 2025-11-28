@@ -254,6 +254,36 @@ export const generateIdentificationPDF = (result: IdentificationResult, lang: 'e
     }
 };
 
+export const generateSummaryPDF = (content: string, lang: 'en' | 'nl', t: (key: string) => string) => {
+    try {
+        const { jsPDF } = jspdf;
+        const doc = new jsPDF();
+        const margin = 20;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        let yPos = 20;
+
+        doc.setFontSize(18);
+        doc.setTextColor(22, 163, 74);
+        doc.text(t('summary_title'), margin, yPos);
+        yPos += 10;
+
+        doc.setFontSize(11);
+        doc.setTextColor(50);
+        const lines = doc.splitTextToSize(content, pageWidth - 2 * margin);
+        for (let i = 0; i < lines.length; i++) {
+            if (yPos > 280) { doc.addPage(); yPos = 20; }
+            doc.text(lines[i], margin, yPos);
+            yPos += 6;
+        }
+
+        doc.save('Flowerix_Summary.pdf');
+        return true;
+    } catch (e) {
+        console.error('Summary PDF Error', e);
+        return false;
+    }
+};
+
 export const generateNotebookPDF = (items: TimelineItem[], startDate: Date, endDate: Date, lang: 'en' | 'nl', t: (key: string) => string) => {
     try {
         const { jsPDF } = jspdf;

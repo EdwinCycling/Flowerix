@@ -35,6 +35,15 @@ export const WorldView: React.FC<WorldViewProps> = ({ posts, plants, onLike, onO
     const [composePlant, setComposePlant] = useState<string>('');
     const [isSaving, setIsSaving] = useState(false);
 
+    React.useEffect(() => {
+        if (isComposeOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isComposeOpen]);
+
     const formatDate = (dateStr: string) => {
         try {
             return new Date(dateStr).toLocaleDateString(lang === 'nl' ? 'nl-NL' : 'en-US', {
@@ -58,9 +67,9 @@ export const WorldView: React.FC<WorldViewProps> = ({ posts, plants, onLike, onO
                 <img
                     src="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
                     alt="Garden Background"
-                    className="w-full h-full object-cover fixed top-0 left-0"
+                    className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/20 to-white/60 dark:from-gray-900/80 dark:via-gray-900/40 dark:to-gray-900/80 fixed top-0 left-0 backdrop-blur-[1px]"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-white/40 dark:from-gray-900/70 dark:via-transparent dark:to-gray-900/80"></div>
             </div>
 
             <div className="relative z-10 flex flex-col gap-6 p-4 max-w-7xl mx-auto pb-24">
@@ -239,8 +248,14 @@ export const WorldView: React.FC<WorldViewProps> = ({ posts, plants, onLike, onO
                                 </select>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">{lang === 'nl' ? 'Foto (optioneel, low-res)' : 'Photo (optional, low-res)'} </label>
-                                <input type="file" accept="image/*" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const b64 = await compressImage(f, 'standard'); setComposeImage(b64); } catch {} }} />
+                                <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">{lang === 'nl' ? 'Foto (optioneel)' : 'Photo (optional)'} </label>
+                                <div className="flex items-center gap-2">
+                                    <input id="compose-photo-input" type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const b64 = await compressImage(f, 'standard'); setComposeImage(b64); } catch {} }} />
+                                    <button onClick={() => document.getElementById('compose-photo-input')?.click()} className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                        {lang === 'nl' ? 'Kies foto' : 'Choose photo'}
+                                    </button>
+                                    {composeImage && <span className="text-xs text-gray-500 dark:text-gray-400">{lang === 'nl' ? 'Gekozen' : 'Selected'}</span>}
+                                </div>
                                 {composeImage && (
                                     <div className="mt-2 w-full h-32 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700">
                                         <img src={composeImage} className="w-full h-full object-cover" />

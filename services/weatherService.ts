@@ -59,7 +59,8 @@ export const fetchWeather = async (lat: number, lon: number): Promise<WeatherDat
                     uvIndex: forecast[0]?.uvIndex
                 },
                 forecast,
-                history
+                history,
+                updatedAt: new Date().toISOString()
             };
         }
         return null;

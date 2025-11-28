@@ -52,7 +52,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     onBack, lang, setLang, homeLocation, setHomeLocation, useWeather, setUseWeather, tempUnit, setTempUnit, lengthUnit, setLengthUnit, windUnit, setWindUnit, firstDayOfWeek, setFirstDayOfWeek, timeFormat, setTimeFormat, limitAI, setLimitAI, modules, setModules, t, onInstallPwa, onOpenPwaInfo
 }) => {
     const { user, profile, refreshProfile } = useAuth();
-    const [activeTab, setActiveTab] = useState<'GENERAL' | 'MODULES' | 'LOCATION' | 'MUSIC' | 'PAYMENT'>('GENERAL');
+    const [activeTab, setActiveTab] = useState<'GENERAL' | 'MODULES' | 'LOCATION' | 'MUSIC' | 'PAYMENT' | 'EXPORT'>('GENERAL');
     const [usageSubTab, setUsageSubTab] = useState<'STATS' | 'SUBSCRIPTION'>('STATS');
     
     // Location Map State
@@ -126,7 +126,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
     const addLog = (_msg: string) => {};
 
-    const handlePlay = (file: string) => {
+    const handlePlay = async (file: string) => {
         setPlayingError(null);
         addLog(`Init playback: ${file}`);
         
@@ -141,12 +141,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             }
         }
 
-        fetch(file, { method: 'HEAD' })
-            .then(res => {
-                if (!res.ok) addLog(`Probe: HTTP ${res.status} (Not OK)`);
-                else addLog(`Probe: HTTP ${res.status} (OK)`);
-            })
-            .catch(e => addLog(`Probe Fail: ${e.message}`));
+        try {
+            const res = await fetch(file, { method: 'HEAD' });
+            if (!res.ok) {
+                setPlayingError(`${file}: Not found`);
+                addLog(`Probe: HTTP ${res.status} (Not OK)`);
+                return;
+            }
+            addLog(`Probe: HTTP ${res.status} (OK)`);
+        } catch (e: any) {
+            addLog(`Probe Fail: ${e.message}`);
+            setPlayingError(`${file}: Network error`);
+            return;
+        }
 
         const audio = new Audio(file);
         audioRef.current = audio;
@@ -366,6 +373,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <button onClick={() => setActiveTab('MODULES')} className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-4 ${activeTab === 'MODULES' ? 'border-green-600 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400'}`}>{t('settings_tab_modules')}</button>
                 <button onClick={() => setActiveTab('LOCATION')} className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-4 ${activeTab === 'LOCATION' ? 'border-green-600 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400'}`}>{t('settings_tab_location')}</button>
                 <button onClick={() => setActiveTab('PAYMENT')} className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-4 flex items-center justify-center gap-2 ${activeTab === 'PAYMENT' ? 'border-green-600 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400'}`}><Icons.Zap className="w-4 h-4" /> {t('settings_tab_usage_payment')}</button>
+                <button onClick={() => setActiveTab('EXPORT')} className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-4 flex items-center justify-center gap-2 ${activeTab === 'EXPORT' ? 'border-green-600 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400'}`}><Icons.Download className="w-4 h-4" /> {t('settings_tab_export')}</button>
                 <button onClick={() => setActiveTab('MUSIC')} className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-4 flex items-center justify-center gap-2 ${activeTab === 'MUSIC' ? 'border-green-600 text-green-600 dark:text-green-400' : 'border-transparent text-gray-500 dark:text-gray-400'}`}><Icons.Music className="w-4 h-4" /> {t('settings_tab_music')}</button>
             </div>
 
@@ -482,6 +490,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 {activeTab === 'MODULES' && (
                     <div className="p-4 overflow-y-auto">
                         <div className="space-y-6 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm">
+                            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800 text-xs text-yellow-800 dark:text-yellow-300">
+                                {lang === 'nl' ? t('modules_help_nl') : t('modules_help_en')}
+                            </div>
                             <div className="flex items-center justify-between">
                                 <div>
                                     <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2"><Icons.Book className="w-4 h-4" /> {t('module_garden_log')}</h3>
@@ -649,6 +660,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                                             <div className="pt-2">
                                                 <button onClick={handleManageSubscription} className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"><Icons.Settings className="w-4 h-4" /> {t('sub_manage_stripe')}</button>
                                                 <p className="text-[10px] text-center text-gray-400 mt-3 flex items-center justify-center gap-1"><Icons.Lock className="w-3 h-3" /> {t('sub_stripe_secure')}</p>
+                                                <p className="text-[10px] text-center mt-1"><a href="https://stripe.com/" target="_blank" rel="noopener" className="text-blue-600 dark:text-blue-400 underline">stripe.com</a></p>
                                             </div>
                                         )}
                                         {subscription.tier === 'FREE' && <div className="text-center py-4"><p className="text-sm text-gray-500 mb-4">{t('sub_free_desc')}</p></div>}
@@ -656,6 +668,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                                 </div>
                             </div>
                         )}
+                    </div>
+                )}
+
+                {activeTab === 'EXPORT' && (
+                    <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{t('export_data')}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{t('export_info')}</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <button onClick={() => { const ok = (window as any).generateFullExport ? (window as any).generateFullExport() : null; }} className="py-3 rounded-xl bg-green-600 text-white font-bold shadow hover:bg-green-700 transition-colors">{t('export_pdf')}</button>
+                                <button onClick={() => { try { const rows: string[] = []; rows.push('Type,Title,Description,Date'); const plants = (window as any).plants || []; const gardenLogs = (window as any).gardenLogs || []; plants.forEach((p: any) => { rows.push(`PLANT,${escapeCsv(p.name)},${escapeCsv(p.description||'')},${p.dateAdded||''}`); p.logs.forEach((l: any)=> rows.push(`PLANT_LOG,${escapeCsv(l.title)},${escapeCsv(l.description||'')},${l.date}`)); }); gardenLogs.forEach((l: any)=> rows.push(`GARDEN_LOG,${escapeCsv(l.title)},${escapeCsv(l.description||'')},${l.date}`)); const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'flowerix_export.csv'; a.click(); URL.revokeObjectURL(url); } catch (e) { alert('Error: CSV'); } }} className="py-3 rounded-xl bg-blue-600 text-white font-bold shadow hover:bg-blue-700 transition-colors">{t('export_csv')}</button>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -743,3 +768,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
     );
 };
+    useEffect(() => {
+        const openUsage = () => { setActiveTab('PAYMENT'); setUsageSubTab('STATS'); };
+        const openModules = () => { setActiveTab('MODULES'); };
+        window.addEventListener('openUsageTab', openUsage);
+        window.addEventListener('openModulesTab', openModules);
+        return () => { window.removeEventListener('openUsageTab', openUsage); window.removeEventListener('openModulesTab', openModules); };
+    }, []);

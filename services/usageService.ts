@@ -19,6 +19,8 @@ export interface UsageStats {
     tier: UserTier;
     extraTokens: number;
     hash?: string; // Integrity Checksum
+    dbLoads?: number;
+    periodLoads?: Record<string, number>;
 }
 
 const IMAGE_TOKEN_COST = 258;
@@ -47,7 +49,9 @@ export const getUsageStats = (): UsageStats => {
         requests: 0, 
         imagesScanned: 0,
         tier: 'FREE',
-        extraTokens: 0
+        extraTokens: 0,
+        dbLoads: 0,
+        periodLoads: {}
     };
 
     try {
@@ -70,6 +74,8 @@ export const getUsageStats = (): UsageStats => {
         // 2. Migration/Defaults
         if (!stats.tier) stats.tier = 'FREE';
         if (stats.extraTokens === undefined) stats.extraTokens = 0;
+        if (stats.dbLoads === undefined) stats.dbLoads = 0;
+        if (!stats.periodLoads) stats.periodLoads = {};
 
         // 3. Daily Reset
         if (stats.lastUsageDate !== today) {
@@ -183,6 +189,24 @@ export const canPerformAction = (estimatedCost: number = 100): { allowed: boolea
 export const isFeatureAllowed = (feature: keyof typeof PRICING_CONFIG['FREE']['features']): boolean => {
     const stats = getUsageStats();
     return PRICING_CONFIG[stats.tier].features[feature];
+};
+
+export const trackDbLoad = async (userId?: string) => {
+    const stats = getUsageStats();
+    const now = new Date();
+    const periodKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`; // YYYY-MM
+    const newStats: UsageStats = { ...stats, dbLoads: (stats.dbLoads || 0) + 1, periodLoads: { ...(stats.periodLoads || {}), [periodKey]: ((stats.periodLoads || {})[periodKey] || 0) + 1 } };
+    saveStats(newStats);
+    window.dispatchEvent(new Event('usageUpdated'));
+
+    if (!userId) return;
+    try {
+        await supabase
+            .from('user_usage')
+            .upsert({ user_id: userId, period: periodKey, loads: ((newStats.periodLoads || {})[periodKey] || 0) }, { onConflict: 'user_id,period' });
+    } catch (e: any) {
+        // Missing table or permissions; ignore gracefully
+    }
 };
 
 /**

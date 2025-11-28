@@ -9,7 +9,6 @@ interface MenuProps {
     setView: (view: any) => void;
     setDashboardTab: (tab: DashboardTab) => void;
     setShowLocationModal: (show: boolean) => void;
-    handleExportData: () => void;
     darkMode: boolean;
     setDarkMode: (dark: boolean) => void;
     lang: 'en' | 'nl';
@@ -20,7 +19,7 @@ interface MenuProps {
 }
 
 export const Menu: React.FC<MenuProps> = ({
-    isOpen, onClose, setView, setDashboardTab, setShowLocationModal, handleExportData, darkMode, setDarkMode, lang, setLang, t, onSignOut, modules
+    isOpen, onClose, setView, setDashboardTab, setShowLocationModal, darkMode, setDarkMode, lang, setLang, t, onSignOut, modules
 }) => {
     if (!isOpen) return null;
     return (
@@ -46,7 +45,7 @@ export const Menu: React.FC<MenuProps> = ({
                 <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
 
                 <button onClick={() => { setView('PRICING'); onClose(); }} className="flex items-center gap-3 text-gray-700 dark:text-gray-200 text-lg hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"><Icons.Star className="w-5 h-5" /> {t('pricing_title')}</button>
-                <button onClick={handleExportData} className="flex items-center gap-3 text-gray-700 dark:text-gray-200 text-lg hover:text-green-600 dark:hover:text-green-400 transition-colors"><Icons.Download className="w-5 h-5" /> {t('export_data')}</button>
+                
                 
                 <button onClick={() => { setView('SETTINGS'); onClose(); }} className="flex items-center gap-3 text-gray-700 dark:text-gray-200 text-lg hover:text-green-600 dark:hover:text-green-400 transition-colors"><Icons.Settings className="w-5 h-5" /> {t('settings_title')}</button>
 

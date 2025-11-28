@@ -16,6 +16,9 @@ export const PhotoTimelapseModal: React.FC<PhotoTimelapseModalProps> = ({ isOpen
     const [isGenerating, setIsGenerating] = useState(false);
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [durationPerPhoto, setDurationPerPhoto] = useState(0.8); // seconds
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(0);
+    const pageSize = 5;
 
     useEffect(() => {
         if (!isOpen) {
@@ -179,8 +182,12 @@ export const PhotoTimelapseModal: React.FC<PhotoTimelapseModalProps> = ({ isOpen
                     {!videoUrl && !isGenerating && (
                         <>
                             <h4 className="font-bold text-gray-700 dark:text-gray-300 mb-4 uppercase text-xs tracking-wider">{t('select_plant_timelapse')}</h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-                                {plants.map(plant => (
+                    <div className="mb-3 flex items-center gap-2">
+                        <input value={search} onChange={(e)=>{ setSearch(e.target.value); setPage(0); }} placeholder={lang==='nl'?'Zoek plant':'Search plant'} className="flex-1 px-3 py-2 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700" />
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{plants.filter(p=> p.name.toLowerCase().includes(search.toLowerCase())).length} planten</div>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                                {plants.filter(p=> p.name.toLowerCase().includes(search.toLowerCase())).slice(page*pageSize, page*pageSize+pageSize).map(plant => (
                                     <div 
                                         key={plant.id} 
                                         onClick={() => setSelectedPlantId(plant.id)}
@@ -197,7 +204,12 @@ export const PhotoTimelapseModal: React.FC<PhotoTimelapseModalProps> = ({ isOpen
                                         </div>
                                     </div>
                                 ))}
-                            </div>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 mb-6">
+                        <button onClick={()=> setPage(Math.max(0, page-1))} disabled={page===0} className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-sm disabled:opacity-50">{t('back')}</button>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{page+1}/{Math.max(1, Math.ceil(plants.filter(p=> p.name.toLowerCase().includes(search.toLowerCase())).length / pageSize))}</span>
+                        <button onClick={()=> setPage(Math.min(Math.ceil(plants.filter(p=> p.name.toLowerCase().includes(search.toLowerCase())).length / pageSize)-1, page+1))} disabled={page>=Math.ceil(plants.filter(p=> p.name.toLowerCase().includes(search.toLowerCase())).length / pageSize)-1} className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 text-sm disabled:opacity-50">{t('next')}</button>
+                    </div>
 
                             {selectedPlantId && (
                                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 mb-4">

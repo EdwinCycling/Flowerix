@@ -127,10 +127,11 @@ interface SummaryModalProps {
     content: string;
     onClose: () => void;
     onCopy: () => void;
+    onDownloadPdf?: () => void;
     t: (key: string) => string;
 }
 
-export const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, content, onClose, onCopy, t }) => {
+export const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, content, onClose, onCopy, onDownloadPdf, t }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
@@ -142,9 +143,15 @@ export const SummaryModal: React.FC<SummaryModalProps> = ({ isOpen, content, onC
                 <div className="p-4 overflow-y-auto flex-1">
                     <textarea readOnly className="w-full h-[50vh] p-3 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 text-sm resize-none outline-none border border-gray-200 dark:border-gray-700" value={content} />
                 </div>
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex gap-3">
-                    <button onClick={onCopy} className="flex-1 bg-green-600 text-white py-2 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-green-700 transition-colors">
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-3">
+                    <button onClick={onCopy} className="bg-green-600 text-white py-2 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-green-700 transition-colors">
                         <Icons.Copy className="w-4 h-4" /> {t('copy_clipboard')}
+                    </button>
+                    <button onClick={onDownloadPdf} className="bg-blue-600 text-white py-2 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors">
+                        <Icons.Download className="w-4 h-4" /> PDF
+                    </button>
+                    <button onClick={onClose} className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 py-2 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                        <Icons.X className="w-4 h-4" /> {t('close')}
                     </button>
                 </div>
             </div>

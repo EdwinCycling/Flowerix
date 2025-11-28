@@ -153,6 +153,11 @@ export const WeatherDetailsView: React.FC<WeatherDetailsViewProps> = ({ weather,
                             <p className="text-blue-100 mt-1 capitalize">
                                 {weather.current.weatherCode === 0 ? t('weather_clear') : t('weather_cloudy')}
                             </p>
+                            {weather.updatedAt && (
+                                <div className="text-[10px] text-blue-100 mt-2">
+                                    {lang === 'nl' ? 'Laatste update:' : 'Last updated:'} {new Date(weather.updatedAt).toLocaleString(lang)}
+                                </div>
+                            )}
                         </div>
                         <div className="w-20 h-20">
                             {getWeatherIcon(weather.current.weatherCode)}
@@ -209,6 +214,7 @@ export const WeatherDetailsView: React.FC<WeatherDetailsViewProps> = ({ weather,
                             return (
                                 <div key={i} className={`flex-shrink-0 w-22 p-3 rounded-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center gap-2 ${isWeekend(day.date) ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-800'}`}>
                                     <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{new Date(day.date).toLocaleDateString(lang, { weekday: 'short' })}</span>
+                                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(day.date).toLocaleDateString(lang, { day: 'numeric', month: 'numeric' })}</span>
                                     <div className="w-8 h-8">{getWeatherIcon(day.weatherCode)}</div>
                                     <div className="flex flex-col items-center text-xs">
                                         <span className={`font-bold ${day.maxTemp < 0 ? 'text-blue-500' : 'text-gray-800 dark:text-white'}`}>{formatTemp(day.maxTemp)}°</span>

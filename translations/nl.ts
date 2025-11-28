@@ -771,6 +771,15 @@ export const nl = {
   loading: "Bezig met laden...",
   syncing_database: "Database synchroniseren...",
   flora_disclaimer: "Flora is een AI en kan fouten maken. Flowerix is niet aansprakelijk voor advies m.b.t. eetbaarheid of medisch gebruik.",
+  settings_tab_usage_payment: "Verbruik / Abonnement",
+  settings_tab_export: "Exporteren",
+  export_info: "Er wordt een export gemaakt en opgeslagen op je lokale apparaat. PDF bevat planten en tuinen met foto’s; CSV bevat alleen tekstgegevens.",
+  export_pdf: "Export PDF",
+  export_csv: "Export CSV",
+  view_usage: "Bekijk verbruik",
+  modules_help_nl: "Hier kunt u modules aan/uit zetten die u (tijdelijk) niet gebruikt. De navigatie wordt aangepast aan uw wensen. We verwijderen geen gegevens op de achtergrond; u kunt op elk moment een module weer activeren.",
+  no_garden_log_photos: "Geen tuinlogboek‑foto’s gevonden. We tonen hier alleen foto’s uit uw tuinlogboek.",
+  activate_garden_logs: "Activeer Tuinlogboek",
   
   // Home Intro (Landing)
   home_intro_title: "De Groene Revolutie in je Broekzak",

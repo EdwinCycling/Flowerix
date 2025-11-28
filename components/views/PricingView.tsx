@@ -8,10 +8,11 @@ import { SubscriptionDetails } from '../../types';
 
 interface PricingViewProps {
     onBack: () => void;
+    onOpenUsage?: () => void;
     t: (key: string) => string;
 }
 
-export const PricingView: React.FC<PricingViewProps> = ({ onBack, t }) => {
+export const PricingView: React.FC<PricingViewProps> = ({ onBack, onOpenUsage, t }) => {
     const [currentTier, setCurrentTier] = useState<UserTier>('FREE');
     const [extraTokens, setExtraTokens] = useState(0);
     const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null);
@@ -124,6 +125,11 @@ export const PricingView: React.FC<PricingViewProps> = ({ onBack, t }) => {
                                     {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
                                 </div>
                             )}
+                            <div className="mt-2">
+                                <button onClick={onOpenUsage} className="px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-bold hover:bg-green-700">
+                                    {t('view_usage')}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
