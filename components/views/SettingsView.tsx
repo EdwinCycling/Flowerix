@@ -105,6 +105,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         return () => window.removeEventListener('usageUpdated', handleUsageUpdate);
     }, []);
 
+    useEffect(() => {
+        const openUsage = () => { setActiveTab('PAYMENT'); setUsageSubTab('STATS'); };
+        const openModules = () => { setActiveTab('MODULES'); };
+        window.addEventListener('openUsageTab', openUsage);
+        window.addEventListener('openModulesTab', openModules);
+        return () => { window.removeEventListener('openUsageTab', openUsage); window.removeEventListener('openModulesTab', openModules); };
+    }, []);
+
     const fetchStats = async () => {
         try {
             const { data, error } = await supabase.from('music_song_stats').select('*').order('votes', { ascending: false });
@@ -768,10 +776,3 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
     );
 };
-    useEffect(() => {
-        const openUsage = () => { setActiveTab('PAYMENT'); setUsageSubTab('STATS'); };
-        const openModules = () => { setActiveTab('MODULES'); };
-        window.addEventListener('openUsageTab', openUsage);
-        window.addEventListener('openModulesTab', openModules);
-        return () => { window.removeEventListener('openUsageTab', openUsage); window.removeEventListener('openModulesTab', openModules); };
-    }, []);
