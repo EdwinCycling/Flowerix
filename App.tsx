@@ -31,7 +31,6 @@ import { CookieConsent } from './components/ui/CookieConsent';
 
 import { WelcomeView } from './components/views/WelcomeView';
 import { WaitlistView } from './components/views/WaitlistView';
-import { SetupRequiredView } from './components/views/SetupRequiredView'; 
 import { DashboardView } from './components/views/DashboardView';
 import { SettingsView } from './components/views/SettingsView'; 
 import { PlantDetailsView } from './components/views/PlantDetailsView';
@@ -47,9 +46,10 @@ import { WeatherDetailsView } from './components/views/WeatherDetailsView';
 import { NotebookView } from './components/views/NotebookView';
 import { ProfessorView } from './components/views/ProfessorView';
 import { PricingView } from './components/views/PricingView';
+import { PRICING_CONFIG } from './pricingConfig';
 
 // --- Constants ---
-const APP_VERSION = 'v0.9112725.1';
+const APP_VERSION = 'v0.91128.1';
 
 // --- Helper: Local Storage & Data Management ---
 const SETTINGS_KEY = 'mygardenview_settings_v1';
@@ -95,6 +95,9 @@ const MainContent: React.FC = () => {
   const [isChatDocked, setIsChatDocked] = useState(false);
   const [chatWidth, setChatWidth] = useState(380);
   const [chatTrigger, setChatTrigger] = useState<{text: string, timestamp: number} | null>(null);
+  const [pwaPromptEvent, setPwaPromptEvent] = useState<any>(null);
+  const [pwaInfo, setPwaInfo] = useState<{ isOpen: boolean, text: string }>({ isOpen: false, text: '' });
+  const [showPwaBanner, setShowPwaBanner] = useState(false);
 
   // Selection State
   const [selectedPlantId, setSelectedPlantId] = useState<string | null>(null);
@@ -548,6 +551,62 @@ const MainContent: React.FC = () => {
       if (!useWeather) { setWeather(null); return; }
       if (homeLocation) { if (!weather) { handleFetchWeather(); } }
   }, [useWeather, homeLocation]); 
+
+  // Show subscription toast on login
+  useEffect(() => {
+      if (!user) return;
+      (async () => {
+          try {
+              const { data } = await supabase
+                  .from('user_subscriptions')
+                  .select('tier, current_period_end, cancel_at_period_end')
+                  .eq('user_id', user.id)
+                  .maybeSingle();
+              if (data && data.tier) {
+                  const tierName = PRICING_CONFIG[data.tier as keyof typeof PRICING_CONFIG].name;
+                  const dateStr = data.current_period_end ? new Date(data.current_period_end).toLocaleDateString(lang === 'nl' ? 'nl-NL' : 'en-US') : '';
+                  const label = data.cancel_at_period_end ? t('sub_active_until') : t('sub_renews_on');
+                  const msg = dateStr ? `${t('sub_plan')}: ${tierName} • ${label} ${dateStr}` : `${t('sub_plan')}: ${tierName}`;
+                  showToast(msg);
+              }
+          } catch {}
+      })();
+  }, [user]);
+
+  useEffect(() => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window as any).navigator['standalone'] === true;
+      const installedFlag = localStorage.getItem('flowerix_pwa_installed') === 'true';
+      const onBeforeInstall = (e: any) => { e.preventDefault(); setPwaPromptEvent(e); };
+      const onInstalled = () => { localStorage.setItem('flowerix_pwa_installed', 'true'); setShowPwaBanner(false); };
+      window.addEventListener('beforeinstallprompt', onBeforeInstall);
+      window.addEventListener('appinstalled', onInstalled);
+      return () => {
+          window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+          window.removeEventListener('appinstalled', onInstalled);
+      };
+  }, []);
+
+  useEffect(() => {
+      if (!user) return;
+      const installedFlag = localStorage.getItem('flowerix_pwa_installed') === 'true';
+      const count = Number(localStorage.getItem('flowerix_login_count') || '0') + 1;
+      localStorage.setItem('flowerix_login_count', String(count));
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window as any).navigator['standalone'] === true;
+      const shouldNudge = !installedFlag && !isStandalone && pwaPromptEvent && count % 3 === 0;
+      setShowPwaBanner(Boolean(shouldNudge));
+  }, [user, pwaPromptEvent]);
+
+  const handleInstallPwa = async () => {
+      if (!pwaPromptEvent) { setPwaInfo({ isOpen: true, text: lang === 'nl' ? 'Installeer Flowerix via je browser menu (Toevoegen aan beginscherm).' : 'Install Flowerix from your browser menu (Add to Home screen).' }); return; }
+      try { await pwaPromptEvent.prompt(); const choice = await pwaPromptEvent.userChoice; if (choice && choice.outcome === 'accepted') { localStorage.setItem('flowerix_pwa_installed', 'true'); setShowPwaBanner(false); } } catch {}
+  };
+
+  const openPwaInfo = () => {
+      const text = lang === 'nl'
+        ? 'Flowerix kan als app op je apparaat worden geïnstalleerd. Voordelen: sneller starten, werkt als zelfstandige app, en offline caching voor basispagina’s.'
+        : 'Flowerix can be installed as an app on your device. Benefits: faster start, works like a standalone app, and basic offline caching.';
+      setPwaInfo({ isOpen: true, text });
+  };
 
   const updateHomeLocation = (loc: HomeLocation | null) => {
       setHomeLocation(loc);
@@ -1362,19 +1421,55 @@ const MainContent: React.FC = () => {
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
   const wrapperStyle = (!limitAI && isChatOpen && isChatDocked && isDesktop) ? { marginRight: `${chatWidth}px`, transition: 'margin-right 0.3s ease-in-out' } : { marginRight: 0, transition: 'margin-right 0.3s ease-in-out' };
 
-  if (isLoading) return <LoadingOverlay visible={true} message="Loading..." />;
-  if (missingDatabase) return <SetupRequiredView />;
+  if (isLoading) return <LoadingOverlay visible={true} message={t('loading')} />;
 
   return (
       <>
         <Toast message={toast.message} visible={toast.visible} />
-        <LoadingOverlay visible={isValidatingImage || isLoadingData} message={isLoadingData ? "Syncing Database..." : t('validating_image')} />
+        <LoadingOverlay visible={isValidatingImage || isLoadingData} message={isLoadingData ? t('syncing_database') : t('validating_image')} />
         
         <div id="landscape-warning" className="fixed inset-0 z-[9999] bg-black text-white flex-col items-center justify-center p-8 text-center hidden">
             <Icons.Smartphone className="w-16 h-16 mb-4 rotate-90 animate-pulse text-green-500" />
             <h2 className="text-2xl font-bold mb-2">Please Rotate Device</h2>
             <p className="text-gray-400">Flowerix is designed for portrait mode on mobile devices.</p>
         </div>
+        {pwaInfo.isOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl flex flex-col max-h-[75vh]">
+                    <div className="p-5">
+                        <div className="flex items-center gap-3 mb-2">
+                            <img src="/intro/android-chrome-192x192.png" alt="App Icon" className="w-8 h-8 rounded" />
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white">{t('pwa_modal_title')}</h3>
+                        </div>
+                        <div className="text-sm text-gray-700 dark:text-gray-300 space-y-3">
+                            <p>{t('pwa_modal_intro')}</p>
+                            <ul className="list-disc pl-5">
+                                <li>{t('pwa_benefit_1')}</li>
+                                <li>{t('pwa_benefit_2')}</li>
+                                <li>{t('pwa_benefit_3')}</li>
+                            </ul>
+                            <div className="space-y-2">
+                                <div>
+                                    <div className="font-bold text-gray-900 dark:text-white">PC</div>
+                                    <div>{t('pwa_pc_how')}</div>
+                                </div>
+                                <div>
+                                    <div className="font-bold text-gray-900 dark:text-white">Mobile Android</div>
+                                    <div>{t('pwa_android_how')}</div>
+                                </div>
+                                <div>
+                                    <div className="font-bold text-gray-900 dark:text-white">Mobile iOS</div>
+                                    <div>{t('pwa_ios_how')}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+                        <button onClick={() => setPwaInfo({ isOpen: false, text: '' })} className="px-4 py-2 bg-green-600 text-white rounded-lg font-bold">{t('close')}</button>
+                    </div>
+                </div>
+            </div>
+        )}
 
         {view !== 'WELCOME' && view !== 'WAITLIST' && (
             <Menu 
@@ -1416,6 +1511,7 @@ const MainContent: React.FC = () => {
                             onRefreshSocial={() => fetchSocialPosts(0, true)}
                             socialHasMore={socialHasMore}
                             showToast={showToast} lang={lang} t={t}
+                            showPwaBanner={showPwaBanner} onInstallPwa={handleInstallPwa} onOpenPwaInfo={openPwaInfo}
                             // Extras
                             onOpenSlideshowConfig={() => setShowSlideshowConfig(true)}
                             onOpenPhotoMerge={() => setShowPhotoMergeModal(true)}
@@ -1456,6 +1552,8 @@ const MainContent: React.FC = () => {
                             limitAI={limitAI} setLimitAI={setLimitAI}
                             modules={modules} setModules={setModules}
                             t={t}
+                            onInstallPwa={handleInstallPwa}
+                            onOpenPwaInfo={openPwaInfo}
                         />;
                     case 'PRICING':
                         return <PricingView onBack={() => setView('DASHBOARD')} t={t} />;

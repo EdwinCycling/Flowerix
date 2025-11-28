@@ -47,6 +47,7 @@ export const FlowerixChatWidget: React.FC<FlowerixChatWidgetProps> = ({
     const isResizingRef = useRef(false);
     const inputRef = useRef<HTMLInputElement>(null); // Ref for auto-focus
     const [showDisclaimer, setShowDisclaimer] = useState(false);
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
     // Clear Confirmation State
     const [showClearConfirm, setShowClearConfirm] = useState(false);
@@ -116,6 +117,16 @@ export const FlowerixChatWidget: React.FC<FlowerixChatWidgetProps> = ({
             messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
         }
     }, [messages, isOpen]);
+
+    // Lock body scroll on mobile full-screen
+    useEffect(() => {
+        if (isOpen && isMobile && !isDocked) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isOpen, isDocked]);
 
     // Resizing Logic
     useEffect(() => {
@@ -431,12 +442,14 @@ Model:`;
                 <div 
                     className={isDocked 
                         ? `fixed top-0 right-0 h-full bg-white dark:bg-gray-900 shadow-2xl flex flex-col z-[60] border-l border-gray-200 dark:border-gray-700 transition-none`
-                        : `fixed bottom-20 right-4 max-h-[90vh] h-[75vh] md:h-[55vh] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-bottom-10 zoom-in-95 duration-300`
+                        : (isMobile 
+                            ? `fixed inset-0 h-[100vh] w-[100vw] bg-white dark:bg-gray-900 shadow-2xl flex flex-col z-[100] border-none rounded-none`
+                            : `fixed bottom-20 right-4 max-h-[90vh] h-[75vh] md:h-[55vh] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-bottom-10 zoom-in-95 duration-300`)
                     }
                     style={{ 
-                        width: `${width}px`, 
-                        maxWidth: isDocked ? '100vw' : '90vw', // Mobile safety
-                        height: isDocked ? '100%' : undefined // Default height handled by classes
+                        width: isMobile && !isDocked ? '100vw' : `${width}px`, 
+                        maxWidth: isDocked ? '100vw' : (isMobile ? '100vw' : '90vw'),
+                        height: isDocked ? '100%' : (isMobile ? '100vh' : undefined)
                     }}
                 >
                     {/* Resize Handle (Left Edge) - Visible mainly on Desktop when Docked */}

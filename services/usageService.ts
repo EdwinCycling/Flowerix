@@ -163,11 +163,8 @@ export const setTier = (tier: UserTier) => {
     })();
 };
 
-export const addExtraTokens = (amount: number) => {
-    const stats = getUsageStats();
-    stats.extraTokens += amount;
-    saveStats(stats);
-    window.dispatchEvent(new Event('usageUpdated'));
+export const addExtraTokens = (_amount: number) => {
+    // Deprecated: tokens now awarded server-side via Stripe webhook
 };
 
 export const canPerformAction = (estimatedCost: number = 100): { allowed: boolean, reason?: 'LIMIT' | 'FEATURE' } => {
@@ -194,29 +191,8 @@ export const isFeatureAllowed = (feature: keyof typeof PRICING_CONFIG['FREE']['f
  */
 export const getSubscriptionDetails = (): SubscriptionDetails => {
     const stats = getUsageStats();
-    
-    // Mock logic based on current tier
-    const now = new Date();
-    const nextMonth = new Date(now);
-    nextMonth.setDate(now.getDate() + 30);
-
-    // Simulating a paid user state for UI demo purposes
-    if (stats.tier !== 'FREE') {
-        return {
-            tier: stats.tier,
-            status: 'active',
-            currentPeriodEnd: nextMonth.toISOString(),
-            cancelAtPeriodEnd: false, // Change to true to see "Ends on" logic
-            stripeCustomerId: 'cus_mock_12345'
-        };
-    }
-
-    return {
-        tier: 'FREE',
-        status: 'active',
-        currentPeriodEnd: '',
-        cancelAtPeriodEnd: false
-    };
+    // Client displays tier quickly; server will update via periodic sync (AuthContext)
+    return { tier: stats.tier, status: 'active', currentPeriodEnd: '', cancelAtPeriodEnd: false };
 };
 
 /**
@@ -225,28 +201,28 @@ export const getSubscriptionDetails = (): SubscriptionDetails => {
  */
 export const validateAndSyncWithServer = async (userId: string) => {
     try {
-        // 1. Run local integrity check (inherent in getUsageStats - checks hash)
         const localStats = getUsageStats();
 
-        // 2. Fetch authoritative data from server
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('settings')
-            .eq('id', userId)
-            .single();
+        // Prefer authoritative subscription row
+        const { data: sub } = await supabase
+            .from('user_subscriptions')
+            .select('tier')
+            .eq('user_id', userId)
+            .maybeSingle();
 
-        if (error || !data) return; // Network issue, trust local (which is already checksummed)
+        const serverTier = sub?.tier || (await (async () => {
+            const { data } = await supabase
+                .from('profiles')
+                .select('settings')
+                .eq('id', userId)
+                .maybeSingle();
+            return data?.settings?.tier || 'FREE';
+        })());
 
-        // Safely access tier, defaulting to FREE if missing
-        const serverTier = data.settings?.tier || 'FREE';
-
-        // 3. Conflict Resolution: Server Authority
-        // If local tier claims to be higher/different than server, overwrite local.
         if (localStats.tier !== serverTier) {
             console.warn(`Security Mismatch Detected: Local(${localStats.tier}) vs Server(${serverTier}). Enforcing Server Truth.`);
-            setTier(serverTier);
+            setTier(serverTier as any);
         }
-        
     } catch (e) {
         console.error("Security sync check failed", e);
     }

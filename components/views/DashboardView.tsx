@@ -120,7 +120,10 @@ interface DashboardViewProps {
     lang: 'en' | 'nl';
     t: (key: string) => string;
     limitAI?: boolean;
-    modules: ModulesConfig;
+  modules: ModulesConfig;
+  showPwaBanner?: boolean;
+  onInstallPwa?: () => void;
+  onOpenPwaInfo?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -138,7 +141,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     onOpenSlideshowConfig, onOpenPhotoMerge, onOpenPhotoOptimize, onOpenPhotoTimelapse, onOpenPlantAnalysis, onOpenSeasons, onOpenPlantAdvice, onOpenIdentify, onOpenProfessor, onShowRestriction,
     timelineItems, onAddNotebookItem, onUpdateNotebookItem, onDeleteNotebookItem, firstDayOfWeek,
     darkMode, setDarkMode, appVersion, onOpenInfoModal,
-    lang, t, limitAI, modules
+    lang, t, limitAI, modules,
+    showPwaBanner, onInstallPwa, onOpenPwaInfo
 }) => {
     const { user } = useAuth();
     const [plantSortType, setPlantSortType] = useState<'name' | 'datePlanted' | 'lastModified'>('datePlanted');
@@ -267,6 +271,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     ))}
                 </div>
             </div>
+            {showPwaBanner && (
+                <div className="px-4 py-2 bg-green-50 dark:bg-green-900 text-green-800 dark:text-green-200 flex items-center justify-between">
+                    <div className="text-sm font-medium">
+                        {t('pwa_banner_text')}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button onClick={onOpenPwaInfo} className="text-xs px-3 py-1 rounded-lg bg-white dark:bg-gray-800 border border-green-200 dark:border-green-700">
+                            {t('info')}
+                        </button>
+                        <button onClick={onInstallPwa} className="text-xs px-3 py-1 rounded-lg bg-green-600 text-white">
+                            {t('pwa_install')}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Main Content Area */}
             <div className="flex-1">

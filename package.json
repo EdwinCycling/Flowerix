@@ -1,7 +1,7 @@
 {
   "name": "flowerix",
   "private": true,
-  "version": "0.9112725.1",
+  "version": "0.91128.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,7 +14,8 @@
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "stripe": "^20.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Flowerix</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#16a34a">
+    <link rel="icon" type="image/png" sizes="32x32" href="/intro/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/intro/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/intro/apple-touch-icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -47,7 +52,11 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
+        overflow-x: hidden;
+        width: 100%;
       }
+      html { max-width: 100%; overflow-x: hidden; }
+      #root { max-width: 100vw; }
       /* Hide scrollbar for horizontal scrolling areas */
       .no-scrollbar::-webkit-scrollbar {
         display: none;

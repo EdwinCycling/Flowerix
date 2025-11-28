@@ -5,7 +5,6 @@ import { HomeLocation, TempUnit, LengthUnit, WindUnit, TimeFormat, SubscriptionD
 import { searchLocation, reverseGeocode } from '../../services/mapService';
 import { getUsageStats, UsageStats, getSubscriptionDetails } from '../../services/usageService';
 import { PRICING_CONFIG } from '../../pricingConfig';
-import { FULL_SCHEMA_SQL } from '../../services/schemaService';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../supabaseClient';
 
@@ -35,6 +34,8 @@ interface SettingsViewProps {
     modules: ModulesConfig;
     setModules: (m: ModulesConfig) => void;
     t: (key: string) => string;
+    onInstallPwa?: () => void;
+    onOpenPwaInfo?: () => void;
 }
 
 const MUSIC_VOTE_KEY = 'flowerix_music_votes';
@@ -48,7 +49,7 @@ const songs = Array.from({ length: 16 }, (_, i) => {
 });
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
-    onBack, lang, setLang, homeLocation, setHomeLocation, useWeather, setUseWeather, tempUnit, setTempUnit, lengthUnit, setLengthUnit, windUnit, setWindUnit, firstDayOfWeek, setFirstDayOfWeek, timeFormat, setTimeFormat, limitAI, setLimitAI, modules, setModules, t
+    onBack, lang, setLang, homeLocation, setHomeLocation, useWeather, setUseWeather, tempUnit, setTempUnit, lengthUnit, setLengthUnit, windUnit, setWindUnit, firstDayOfWeek, setFirstDayOfWeek, timeFormat, setTimeFormat, limitAI, setLimitAI, modules, setModules, t, onInstallPwa, onOpenPwaInfo
 }) => {
     const { user, profile, refreshProfile } = useAuth();
     const [activeTab, setActiveTab] = useState<'GENERAL' | 'MODULES' | 'LOCATION' | 'MUSIC' | 'PAYMENT'>('GENERAL');
@@ -77,8 +78,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     const [usageStats, setUsageStats] = useState<UsageStats>(getUsageStats());
     const [subscription, setSubscription] = useState<SubscriptionDetails>(getSubscriptionDetails());
 
-    // Schema Modal
-    const [showSchemaModal, setShowSchemaModal] = useState(false);
+    
 
     // Initialize Music selection from profile.settings (JSON)
     useEffect(() => {
@@ -339,7 +339,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     };
 
     const handleManageSubscription = () => {
-        alert("Redirecting to Stripe Customer Portal...");
+        const portalUrl = "https://billing.stripe.com/p/login/test_9B6dR93xOc8Y8NK0DP24001";
+        const win = window.open(portalUrl, '_blank', 'noopener');
+        if (!win) {
+            alert("Unable to open Stripe portal. Please allow pop-ups and try again.");
+        }
     };
 
     const fmtNum = (num: number) => num.toLocaleString(lang === 'nl' ? 'nl-NL' : 'en-US');
@@ -348,10 +352,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         return new Date(iso).toLocaleDateString(lang === 'nl' ? 'nl-NL' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
     };
 
-    const copySQL = () => {
-        navigator.clipboard.writeText(FULL_SCHEMA_SQL);
-        alert(t('copy_success'));
-    };
+    
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col transition-colors">
@@ -461,15 +462,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                             <hr className="border-gray-100 dark:border-gray-700" />
 
-                            {/* Database Schema */}
-                            <div>
-                                <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-                                    <Icons.Database className="w-4 h-4" /> {t('settings_schema_title')}
-                                </h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 pl-6">{t('schema_modal_desc')}</p>
-                                <button onClick={() => setShowSchemaModal(true)} className="w-full py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
-                                    <Icons.Code className="w-4 h-4" /> {t('view_schema_btn')}
-                                </button>
+                            <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-100 dark:border-green-800">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <img src="/intro/android-chrome-192x192.png" alt="App Icon" className="w-5 h-5 rounded" />
+                                        <Icons.Download className="w-4 h-4" /> {t('pwa_label')}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={onOpenPwaInfo} className="text-xs px-3 py-1 rounded-lg bg-white dark:bg-gray-800 border border-green-200 dark:border-green-700">{t('info')}</button>
+                                        <button onClick={onInstallPwa} className="text-xs px-3 py-1 rounded-lg bg-green-600 text-white">{t('pwa_install')}</button>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-2">{t('pwa_banner_text')}</p>
                             </div>
                         </div>
                     </div>
@@ -735,26 +739,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 )}
             </div>
 
-            {/* Schema Modal */}
-            {showSchemaModal && (
-                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 w-full max-w-3xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95">
-                        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <Icons.Database className="w-5 h-5 text-blue-500" /> SQL Schema
-                            </h3>
-                            <button onClick={() => setShowSchemaModal(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-white"><Icons.X /></button>
-                        </div>
-                        <div className="flex-1 p-0 overflow-hidden bg-gray-950">
-                            <textarea readOnly className="w-full h-full p-4 bg-gray-950 text-green-400 font-mono text-xs resize-none focus:outline-none" value={FULL_SCHEMA_SQL} />
-                        </div>
-                        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-2xl flex justify-end gap-2">
-                            <button onClick={() => setShowSchemaModal(false)} className="px-4 py-2 text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg">{t('close')}</button>
-                            <button onClick={copySQL} className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 flex items-center gap-2"><Icons.Copy className="w-4 h-4" /> {t('copy_text')}</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            
         </div>
     );
 };

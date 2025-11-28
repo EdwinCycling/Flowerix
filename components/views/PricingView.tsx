@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../Icons';
 import { PRICING_CONFIG, UserTier, FLOWERIX_BLOCK } from '../../pricingConfig';
-import { getUsageStats, setTier, addExtraTokens, getSubscriptionDetails } from '../../services/usageService';
+import { getUsageStats, getSubscriptionDetails } from '../../services/usageService';
 import { ConfirmationModal } from '../ui/Overlays';
 import { SubscriptionDetails } from '../../types';
 
@@ -61,26 +61,32 @@ export const PricingView: React.FC<PricingViewProps> = ({ onBack, t }) => {
         }
     };
 
-    const confirmChange = () => {
-        if (modalConfig.targetTier) {
-            setTier(modalConfig.targetTier);
-            setCurrentTier(modalConfig.targetTier);
-            setModalConfig({ ...modalConfig, isOpen: false });
-            
-            // Simple success feedback (could be replaced with a nicer toast if available in props)
-            // Using a small timeout to allow modal to close first
-            setTimeout(() => {
-                if (modalConfig.isUpgrade) {
-                    // Trigger confetti or celebration effect ideally
-                }
-            }, 300);
-        }
+    const confirmChange = async () => {
+        if (!modalConfig.targetTier) return;
+        try {
+            const res = await fetch('/.netlify/functions/stripeCreateCheckout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tier: modalConfig.targetTier, userId: subscription?.stripeCustomerId ? undefined : (window as any).supabaseUserId })
+            });
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            }
+        } catch (e) { alert('Error: Unable to start checkout'); }
+        setModalConfig({ ...modalConfig, isOpen: false });
     };
 
-    const handleBuyBlock = () => {
-        addExtraTokens(FLOWERIX_BLOCK.tokens);
-        setExtraTokens(prev => prev + FLOWERIX_BLOCK.tokens);
-        alert(t('tokens_added'));
+    const handleBuyBlock = async () => {
+        try {
+            const res = await fetch('/.netlify/functions/stripeCreateCheckout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ block: true, userId: (window as any).supabaseUserId })
+            });
+            const data = await res.json();
+            if (data.url) window.location.href = data.url; else alert('Error: Could not create checkout');
+        } catch { alert('Error: Could not create checkout'); }
     };
 
     const tiers: UserTier[] = ['FREE', 'SILVER', 'GOLD'];
@@ -113,9 +119,11 @@ export const PricingView: React.FC<PricingViewProps> = ({ onBack, t }) => {
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                                 {subscription.cancelAtPeriodEnd ? t('sub_active_until') : t('sub_renews_on')}
                             </span>
-                            <div className="font-medium text-gray-700 dark:text-gray-300">
-                                {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-                            </div>
+                            {subscription.currentPeriodEnd && (
+                                <div className="font-medium text-gray-700 dark:text-gray-300">
+                                    {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -187,6 +195,17 @@ export const PricingView: React.FC<PricingViewProps> = ({ onBack, t }) => {
                                     >
                                         {isCurrent ? t('current_plan') : isUpgrade ? t('upgrade_now') : t('downgrade_btn')}
                                     </button>
+                                    {isCurrent && subscription?.stripeCustomerId && (
+                                        <button onClick={async () => {
+                                            try {
+                                                const res = await fetch(`/.netlify/functions/stripeCreatePortal?customer_id=${subscription.stripeCustomerId}`);
+                                                const data = await res.json();
+                                                if (data.url) window.location.href = data.url;
+                                            } catch { alert('Error: Cannot open portal'); }
+                                        }} className="mt-2 w-full py-2 rounded-xl font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                                            Manage Subscription
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         );

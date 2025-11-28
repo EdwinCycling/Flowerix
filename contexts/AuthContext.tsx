@@ -86,20 +86,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const validateSubscription = async (userId: string) => {
         try {
-            const { data, error } = await supabase
+            // Prefer authoritative subscription table
+            const { data: sub } = await supabase
+                .from('user_subscriptions')
+                .select('tier, status, current_period_end, cancel_at_period_end, stripe_customer_id')
+                .eq('user_id', userId)
+                .maybeSingle();
+
+            if (sub && sub.tier) {
+                const dbTier = sub.tier as any;
+                const localStats = getUsageStats();
+                if (localStats.tier !== dbTier) {
+                    console.log(`Security: Tier mismatch detected. Local: ${localStats.tier}, DB: ${dbTier}. Syncing...`);
+                    setTier(dbTier);
+                    setProfile(prev => prev ? { ...prev, settings: { ...prev.settings, tier: dbTier } } : null);
+                }
+                return;
+            }
+
+            // Fallback to profiles.settings.tier
+            const { data } = await supabase
                 .from('profiles')
                 .select('settings')
                 .eq('id', userId)
                 .single();
-
             if (data && data.settings && data.settings.tier) {
                 const dbTier = data.settings.tier;
                 const localStats = getUsageStats();
-                
                 if (localStats.tier !== dbTier) {
-                    console.log(`Security: Tier mismatch detected. Local: ${localStats.tier}, DB: ${dbTier}. Syncing...`);
                     setTier(dbTier);
-                    // Also update context state if needed
                     setProfile(prev => prev ? { ...prev, settings: { ...prev.settings, tier: dbTier } } : null);
                 }
             }

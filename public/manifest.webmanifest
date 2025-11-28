@@ -1,0 +1,15 @@
+{
+  "name": "Flowerix",
+  "short_name": "Flowerix",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0fdf4",
+  "theme_color": "#16a34a",
+  "icons": [
+    { "src": "/intro/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/intro/favicon-32x32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "/intro/favicon-16x16.png", "sizes": "16x16", "type": "image/png" },
+    { "src": "/intro/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/intro/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
