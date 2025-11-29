@@ -14,7 +14,7 @@ export const handler = async (event: any) => {
 
   try {
     const sig = event.headers['stripe-signature'] || event.headers['Stripe-Signature'];
-    const body = event.body;
+    const body = event.isBase64Encoded ? Buffer.from(event.body, 'base64').toString('utf8') : event.body;
     const constructed = stripe.webhooks.constructEvent(body, sig as string, STRIPE_WEBHOOK_SECRET);
     const evt = constructed as Stripe.Event;
 

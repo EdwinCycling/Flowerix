@@ -6,6 +6,8 @@ export const uploadPlantImage = async (base64: string, userId: string): Promise<
         // 1. Convert Base64 to Blob
         const res = await fetch(base64);
         const blob = await res.blob();
+        if (!blob.type.startsWith('image/')) return null;
+        if (blob.size > 5 * 1024 * 1024) return null;
         
         // 2. Generate unique filename
         const filename = `${userId}/${Date.now()}.jpg`;
@@ -73,7 +75,24 @@ export const getSignedUrl = async (filePath: string, expiresIn: number = 3600): 
 
 export const resolveImageUrl = async (input: string | null | undefined, expiresIn: number = 3600): Promise<string | undefined> => {
     if (!input) return undefined;
-    if (input.startsWith('http')) return input;
+    if (input.startsWith('http')) {
+        try {
+            const urlObj = new URL(input);
+            const isSigned = urlObj.pathname.includes('/object/sign/');
+            if (isSigned) {
+                const bucketName = 'flowerix-media';
+                const parts = urlObj.pathname.split(`/${bucketName}/`);
+                if (parts.length >= 2) {
+                    const filePath = decodeURIComponent(parts[1]);
+                    const refreshed = await getSignedUrl(filePath, expiresIn);
+                    if (refreshed) return refreshed;
+                }
+            }
+            return input;
+        } catch {
+            return input;
+        }
+    }
     const signed = await getSignedUrl(input, expiresIn);
     return signed || undefined;
 };

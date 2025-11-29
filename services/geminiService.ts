@@ -3,10 +3,54 @@ import { AISuggestion, AnalysisResult, AnalysisType, PlantAdviceFormData, PlantR
 import { trackUsage } from "./usageService";
 
 const endpoint = "/.netlify/functions/gemini";
+
+// Mock Data for Dev Mode / Fallback
+const MOCK_PLANT: AISuggestion = {
+    name: "Monstera Deliciosa (Dev Mode)",
+    scientificName: "Monstera deliciosa",
+    description: "This is a mock description generated because the Gemini backend is unavailable. The Monstera deliciosa is a popular houseplant known for its fenestrated leaves.",
+    careInstructions: "Water when top inch of soil is dry. Bright indirect light.",
+    isIndoor: true
+};
+
 const postGemini = async (payload: any) => {
-  const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-  if (!res.ok) throw new Error(`Error: Gemini function unavailable (${res.status})`);
-  return res.json();
+  try {
+      const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      
+      // If backend is missing (common in local dev without netlify-cli), use fallback
+      if (res.status === 500 || res.status === 404 || res.status === 502 || res.status === 504) {
+          console.warn(`Gemini Backend Unavailable (${res.status}). Using Mock Data.`);
+          return getMockResponse(payload.action);
+      }
+      
+      if (!res.ok) throw new Error(`Error: Gemini function unavailable (${res.status})`);
+      return res.json();
+  } catch (e) {
+      console.warn("Gemini Fetch Failed. Using Mock Data.", e);
+      return getMockResponse(payload.action);
+  }
+};
+
+const getMockResponse = (action: string) => {
+    switch (action) {
+        case 'validateImageContent':
+            return { allowed: true };
+        case 'identify':
+            return MOCK_PLANT;
+        case 'identifyMulti':
+            return [MOCK_PLANT];
+        case 'generateDescription':
+            return { 
+                description: MOCK_PLANT.description, 
+                careInstructions: MOCK_PLANT.careInstructions, 
+                scientificName: MOCK_PLANT.scientificName, 
+                isIndoor: MOCK_PLANT.isIndoor 
+            };
+        case 'webSearch':
+            return { summary: "Web search is unavailable in dev mode without backend.", sources: [] };
+        default:
+            return null;
+    }
 };
 
 export const identifyPlant = async (base64Image: string, lang: 'en' | 'nl'): Promise<AISuggestion | null> => {

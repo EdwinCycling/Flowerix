@@ -1,11 +1,9 @@
 
 import { Plant, GardenLogItem, PlantRecommendation, IdentificationResult, TimelineItem } from "../types";
-
-declare const jspdf: any;
+import { jsPDF } from 'jspdf';
 
 export const generatePlantPDF = (plant: Plant, lang: 'en' | 'nl', t: (key: string) => string) => {
   try {
-    const { jsPDF } = jspdf;
     const doc = new jsPDF();
     const locale = lang === 'nl' ? 'nl-NL' : 'en-US';
 
@@ -96,8 +94,7 @@ export const generatePlantPDF = (plant: Plant, lang: 'en' | 'nl', t: (key: strin
 };
 
 export const generateFullExport = (plants: Plant[], gardenLogs: GardenLogItem[], lang: 'en' | 'nl', t: (key: string) => string) => {
-    try {
-        const { jsPDF } = jspdf;
+  try {
         const doc = new jsPDF();
         let yPos = 20;
         const margin = 20;
@@ -151,8 +148,7 @@ export const generateFullExport = (plants: Plant[], gardenLogs: GardenLogItem[],
 };
 
 export const generateAdvicePDF = (recommendations: PlantRecommendation[], lang: 'en' | 'nl', t: (key: string) => string) => {
-    try {
-        const { jsPDF } = jspdf;
+  try {
         const doc = new jsPDF();
         const margin = 20;
         let yPos = 20;
@@ -199,8 +195,7 @@ export const generateAdvicePDF = (recommendations: PlantRecommendation[], lang: 
 };
 
 export const generateIdentificationPDF = (result: IdentificationResult, lang: 'en' | 'nl', t: (key: string) => string) => {
-    try {
-        const { jsPDF } = jspdf;
+  try {
         const doc = new jsPDF();
         const margin = 20;
         let yPos = 20;
@@ -255,8 +250,7 @@ export const generateIdentificationPDF = (result: IdentificationResult, lang: 'e
 };
 
 export const generateSummaryPDF = (content: string, lang: 'en' | 'nl', t: (key: string) => string) => {
-    try {
-        const { jsPDF } = jspdf;
+  try {
         const doc = new jsPDF();
         const margin = 20;
         const pageWidth = doc.internal.pageSize.getWidth();
@@ -285,8 +279,7 @@ export const generateSummaryPDF = (content: string, lang: 'en' | 'nl', t: (key: 
 };
 
 export const generateNotebookPDF = (items: TimelineItem[], startDate: Date, endDate: Date, lang: 'en' | 'nl', t: (key: string) => string) => {
-    try {
-        const { jsPDF } = jspdf;
+  try {
         const doc = new jsPDF();
         const locale = lang === 'nl' ? 'nl-NL' : 'en-US';
         const margin = 20;
@@ -332,7 +325,11 @@ export const generateNotebookPDF = (items: TimelineItem[], startDate: Date, endD
                 doc.setFontSize(8);
                 const status = item.isDone ? t('task_done') : 'Todo';
                 const w = doc.getTextWidth(status);
-                doc.setTextColor(item.isDone ? [34, 197, 94] : [107, 114, 128]);
+                if (item.isDone) {
+                    doc.setTextColor(34, 197, 94);
+                } else {
+                    doc.setTextColor(107, 114, 128);
+                }
                 doc.text(`[${status}]`, pageWidth - margin - w - 5, yPos);
             }
             yPos += 6;
@@ -359,8 +356,7 @@ export const generateNotebookPDF = (items: TimelineItem[], startDate: Date, endD
 };
 
 export const generateProfessorPDF = (title: string, content: string, imageUrl: string | null, lang: 'en' | 'nl', t: (key: string) => string) => {
-    try {
-        const { jsPDF } = jspdf;
+  try {
         const doc = new jsPDF();
         const margin = 20;
         let yPos = 20;

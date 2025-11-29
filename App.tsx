@@ -49,7 +49,7 @@ import { PricingView } from './components/views/PricingView';
 import { PRICING_CONFIG } from './pricingConfig';
 
 // --- Constants ---
-const APP_VERSION = 'v0.91128.2';
+const APP_VERSION = 'v0.91129.1';
 
 // --- Helper: Local Storage & Data Management ---
 const SETTINGS_KEY = 'mygardenview_settings_v1';
@@ -245,10 +245,9 @@ const MainContent: React.FC = () => {
           const { data, error } = await supabase
             .from('social_posts')
             .select(`
-                *,
-                profiles(display_name),
+                id, user_id, country_code, plant_name, title, description, image_url, event_date, created_at, weather,
                 social_likes(user_id),
-                social_comments(id, text, created_at, profiles(display_name))
+                social_comments(id, user_id, text, created_at)
             `)
             .order('created_at', { ascending: false })
             .range(from, to);
@@ -261,10 +260,20 @@ const MainContent: React.FC = () => {
           }
 
           if (data) {
+              const userIds = new Set<string>();
+              data.forEach((post: any) => {
+                if (post.user_id) userIds.add(post.user_id);
+                if (Array.isArray(post.social_comments)) post.social_comments.forEach((c: any) => { if (c.user_id) userIds.add(c.user_id); });
+              });
+              let nameMap: Record<string, string> = {};
+              if (userIds.size > 0) {
+                const { data: profs } = await supabase.from('profiles').select('id, display_name').in('id', Array.from(userIds));
+                if (Array.isArray(profs)) profs.forEach((p: any) => { nameMap[p.id] = p.display_name || 'User'; });
+              }
               const mappedPosts: SocialPost[] = await Promise.all(data.map(async (post) => ({
                   id: post.id,
-                  userName: post.profiles?.display_name || 'Unknown',
-                  userAvatarColor: 'bg-green-600', // Dynamic avatars later
+                  userName: nameMap[post.user_id] || 'Unknown',
+                  userAvatarColor: 'bg-green-600',
                   country: post.country_code || 'Global',
                   plantName: post.plant_name || 'Plant',
                   title: post.title,
@@ -272,13 +281,13 @@ const MainContent: React.FC = () => {
                   imageUrl: await resolveImageUrl(post.image_url),
                   date: post.event_date || post.created_at,
                   createdDate: post.created_at,
-                  weather: post.weather, // JSONB
+                  weather: post.weather,
                   likes: post.social_likes ? post.social_likes.length : 0, 
                   isLiked: post.social_likes ? post.social_likes.some((l: any) => l.user_id === user.id) : false,
                   isCurrentUser: post.user_id === user.id,
                   comments: post.social_comments ? post.social_comments.map((c: any) => ({
                       id: c.id,
-                      userName: c.profiles?.display_name || 'User',
+                      userName: nameMap[c.user_id] || 'User',
                       text: c.text,
                       date: c.created_at
                   })) : []
@@ -440,6 +449,18 @@ const MainContent: React.FC = () => {
           (async () => { try { await trackDbLoad(user.id); } catch {} })();
       }
   }, [isLoadingData, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const results = await (await import('./services/policyAssert')).runRLSAssertions(user.id);
+        if (results.some(r => r.status === 'fail')) {
+          showToast('Error: Security policy misconfiguration');
+        }
+      } catch {}
+    })();
+  }, [user]);
 
   // Initialization
   useEffect(() => {
@@ -1452,7 +1473,7 @@ const MainContent: React.FC = () => {
   const selectedPost = socialPosts.find(p => p.id === selectedSocialPostId);
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
-  const wrapperStyle = (!limitAI && isChatOpen && isChatDocked && isDesktop) ? { marginRight: `${chatWidth}px`, transition: 'margin-right 0.3s ease-in-out' } : { marginRight: 0, transition: 'margin-right 0.3s ease-in-out' };
+  const wrapperStyle = (!limitAI && isChatOpen && isChatDocked && isDesktop && view !== 'SETTINGS') ? { marginRight: `${chatWidth}px`, transition: 'margin-right 0.3s ease-in-out' } : { marginRight: 0, transition: 'margin-right 0.3s ease-in-out' };
 
   if (isLoading) return <LoadingOverlay visible={true} message={t('loading')} />;
 

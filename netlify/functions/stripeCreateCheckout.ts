@@ -6,19 +6,40 @@ export const handler = async (event: any) => {
     const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
     const SUPABASE_URL = process.env.SUPABASE_URL as string;
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
+    const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY as string;
     if (!STRIPE_SECRET_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       return { statusCode: 500, body: JSON.stringify({ error: 'Error: Missing server env configuration' }) };
     }
 
     const stripe = new Stripe(STRIPE_SECRET_KEY);
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const ip = (event.headers['x-forwarded-for'] || event.headers['client-ip'] || '') as string;
+    const now = Date.now();
+    const key = `chk:${ip.split(',')[0]}`;
+    (global as any).__RL__ = (global as any).__RL__ || {};
+    const store = (global as any).__RL__;
+    const rec = store[key];
+    if (!rec || now - rec.ts > 60_000) store[key] = { c: 1, ts: now }; else if (rec.c >= 20) return { statusCode: 429, body: JSON.stringify({ error: 'Error: Too many requests' }) }; else rec.c++;
 
     const body = event.body ? JSON.parse(event.body) : {};
-    const userId = body.userId;
     const mode: 'subscription' | 'payment' = body.block ? 'payment' : 'subscription';
     const tier = body.tier;
 
-    // Map server-known price IDs
+    const authHdr = event.headers['authorization'] || event.headers['Authorization'];
+    if (!authHdr || !String(authHdr).startsWith('Bearer ')) {
+      return { statusCode: 401, body: JSON.stringify({ error: 'Error: Missing Authorization' }) };
+    }
+    if (!SUPABASE_ANON_KEY) {
+      return { statusCode: 500, body: JSON.stringify({ error: 'Error: Missing anon key' }) };
+    }
+    const accessToken = String(authHdr).substring(7);
+    const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { Authorization: `Bearer ${accessToken}` } } });
+    const userRes = await supabaseAuth.auth.getUser();
+    const userId = userRes.data.user?.id;
+    if (!userId) {
+      return { statusCode: 401, body: JSON.stringify({ error: 'Error: Invalid token' }) };
+    }
+
     const PRICE_SILVER = process.env.STRIPE_PRICE_SILVER as string;
     const PRICE_GOLD = process.env.STRIPE_PRICE_GOLD as string;
     const PRICE_BLOCK = process.env.STRIPE_PRICE_BLOCK as string;
@@ -26,7 +47,6 @@ export const handler = async (event: any) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Error: Invalid tier' }) };
     }
 
-    // Resolve customer
     const { data: prof } = await supabase.from('profiles').select('id, settings').eq('id', userId).single();
     let stripeCustomerId = prof?.settings?.stripeCustomerId;
     if (!stripeCustomerId) {

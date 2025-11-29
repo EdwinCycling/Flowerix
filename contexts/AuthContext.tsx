@@ -141,6 +141,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     return;
                 } else {
                     console.warn('Profile fetch warning:', error.message);
+                    if (error.code === '42501' || /permission denied/i.test(error.message)) {
+                        try {
+                            const { data: sess } = await supabase.auth.getSession();
+                            if (!sess.session) {
+                                const { data: refreshed } = await supabase.auth.refreshSession();
+                                if (refreshed.session) {
+                                    const retry = await supabase.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
+                                    if (retry.data) {
+                                        const userProf = retry.data as UserProfile;
+                                        setProfile(userProf);
+                                        setIsLoading(false);
+                                        return;
+                                    }
+                                }
+                            }
+                        } catch {}
+                        // If permission denied persists, do not attempt self-heal as it will likely fail too.
+                        setIsLoading(false);
+                        return; 
+                    }
                 }
             }
 

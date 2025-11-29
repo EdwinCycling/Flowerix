@@ -22,5 +22,12 @@ if (!isConfigured) {
 
 export const supabase = createClient(
     String(supabaseUrl),
-    String(supabaseAnonKey)
+    String(supabaseAnonKey),
+    {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+        }
+    }
 );

@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import L from 'leaflet';
 import { Icons } from '../Icons';
 import { HomeLocation, TempUnit, LengthUnit, WindUnit, TimeFormat, SubscriptionDetails, ModulesConfig } from '../../types';
 import { searchLocation, reverseGeocode } from '../../services/mapService';
@@ -8,8 +9,6 @@ import { PRICING_CONFIG } from '../../pricingConfig';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../supabaseClient';
 
-// Declare Leaflet globally
-declare const L: any;
 
 interface SettingsViewProps {
     onBack: () => void;
@@ -47,6 +46,14 @@ const songs = Array.from({ length: 16 }, (_, i) => {
     const file = `/music/${encodeURIComponent(`song (${n}).mp3`)}`;
     return { title, file };
 });
+
+const escapeCsv = (value: string): string => {
+    const s = String(value ?? "");
+    const cleaned = s.replace(/\r?\n+/g, " ");
+    const neutralized = /^[=+\-@]/.test(cleaned) ? `'${cleaned}` : cleaned;
+    const escaped = neutralized.replace(/"/g, '""');
+    return /[",\n]/.test(neutralized) ? `"${escaped}"` : escaped;
+};
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
     onBack, lang, setLang, homeLocation, setHomeLocation, useWeather, setUseWeather, tempUnit, setTempUnit, lengthUnit, setLengthUnit, windUnit, setWindUnit, firstDayOfWeek, setFirstDayOfWeek, timeFormat, setTimeFormat, limitAI, setLimitAI, modules, setModules, t, onInstallPwa, onOpenPwaInfo
@@ -644,6 +651,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                                         <span className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2"><Icons.Activity className="w-4 h-4" /> {t('usage_ratio')} (In/Out)</span>
                                         <span className="font-bold text-gray-800 dark:text-white">1 : {(usageStats.outputTokens / (usageStats.inputTokens || 1)).toFixed(2)}</span>
                                     </div>
+                                    <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-100 dark:border-gray-700">
+                                        <span className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-2"><Icons.Cloud className="w-4 h-4" /> {t('usage_db_loads')}</span>
+                                        <span className="font-bold text-gray-800 dark:text-white">{fmtNum(usageStats.dbLoads || 0)}</span>
+                                    </div>
+                                </div>
+                                <div className="mt-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700 p-4">
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2">{t('usage_monthly_loads')}</div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {Object.entries(usageStats.periodLoads || {}).sort((a,b) => b[0].localeCompare(a[0])).slice(0,6).map(([period, loads]) => (
+                                            <div key={period} className="flex items-center justify-between text-sm bg-white dark:bg-gray-800 rounded-lg px-3 py-2 border border-gray-100 dark:border-gray-700">
+                                                <span className="text-gray-600 dark:text-gray-300">{period}</span>
+                                                <span className="font-bold text-gray-800 dark:text-white">{fmtNum(loads as any)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -685,8 +707,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{t('export_data')}</h3>
                             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">{t('export_info')}</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <button onClick={() => { const ok = (window as any).generateFullExport ? (window as any).generateFullExport() : null; }} className="py-3 rounded-xl bg-green-600 text-white font-bold shadow hover:bg-green-700 transition-colors">{t('export_pdf')}</button>
-                                <button onClick={() => { try { const rows: string[] = []; rows.push('Type,Title,Description,Date'); const plants = (window as any).plants || []; const gardenLogs = (window as any).gardenLogs || []; plants.forEach((p: any) => { rows.push(`PLANT,${escapeCsv(p.name)},${escapeCsv(p.description||'')},${p.dateAdded||''}`); p.logs.forEach((l: any)=> rows.push(`PLANT_LOG,${escapeCsv(l.title)},${escapeCsv(l.description||'')},${l.date}`)); }); gardenLogs.forEach((l: any)=> rows.push(`GARDEN_LOG,${escapeCsv(l.title)},${escapeCsv(l.description||'')},${l.date}`)); const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'flowerix_export.csv'; a.click(); URL.revokeObjectURL(url); } catch (e) { alert('Error: CSV'); } }} className="py-3 rounded-xl bg-blue-600 text-white font-bold shadow hover:bg-blue-700 transition-colors">{t('export_csv')}</button>
+                                <button onClick={() => { try { window.dispatchEvent(new Event('exportPDF')); } catch (e) {} }} className="py-3 rounded-xl bg-green-600 text-white font-bold shadow hover:bg-green-700 transition-colors">{t('export_pdf')}</button>
+                                <button onClick={() => { try { window.dispatchEvent(new Event('exportCSV')); } catch (e) {} }} className="py-3 rounded-xl bg-blue-600 text-white font-bold shadow hover:bg-blue-700 transition-colors">{t('export_csv')}</button>
                             </div>
                         </div>
                     </div>
