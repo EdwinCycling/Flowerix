@@ -125,7 +125,7 @@ export const PhotoOptimizeModal: React.FC<PhotoOptimizeModalProps> = ({ isOpen, 
                 setSelectedImageUrl(result);
                 resetFilters();
             } else {
-                alert("AI Edit not supported by current model or failed.");
+                alert(lang === 'nl' ? "AI bewerken is nog in ontwikkeling." : "AI editing is currently under development.");
             }
         } catch (e) {
             console.error(e);

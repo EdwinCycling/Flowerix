@@ -848,10 +848,10 @@ export const NotebookView: React.FC<NotebookViewProps> = ({
     };
 
     return (
-        <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 flex flex-col">
+        <div className="flex-1 relative bg-gray-50 dark:bg-gray-900 flex flex-col h-full overflow-hidden">
             <Toast message={toastMsg || ''} visible={!!toastMsg} />
             
-            <div className="sticky top-[65px] z-20 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-3 flex justify-between items-center shadow-sm shrink-0 gap-2 overflow-x-auto no-scrollbar">
+            <div className="sticky top-0 z-20 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 p-3 flex justify-between items-center shadow-sm shrink-0 gap-2 overflow-x-auto no-scrollbar">
                 <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg flex-shrink-0">
                     <button onClick={() => setViewMode('TIMELINE')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${viewMode === 'TIMELINE' ? 'bg-white dark:bg-gray-600 shadow text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
                         {t('timeline_view')}
@@ -880,7 +880,7 @@ export const NotebookView: React.FC<NotebookViewProps> = ({
                 </div>
             </div>
 
-            <div className="flex-1 relative">
+            <div className="flex-1 relative overflow-y-auto">
                 {viewMode === 'TIMELINE' ? (
                     <div className="p-4 pb-24 relative min-h-[500px]">
                         <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-amber-700/20 dark:bg-amber-700/40 z-0"></div>

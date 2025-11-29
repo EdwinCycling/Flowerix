@@ -59,6 +59,12 @@ export const AppReportModal: React.FC<AppReportModalProps> = ({ isOpen, type, on
             <section className="space-y-4">
                 <p className="leading-relaxed">The information provided by Flowerix is for general informational purposes only. All information on the Site is provided in good faith, however we make no representation or warranty of any kind, express or implied, regarding the accuracy, adequacy, validity, reliability, availability, or completeness of any information on the Site.</p>
                 <p>Under no circumstance shall we have any liability to you for any loss or damage of any kind incurred as a result of the use of the site or reliance on any information provided on the site. Your use of the site and your reliance on any information on the site is solely at your own risk.</p>
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                    <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-2">Weather Data Attribution</h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Weather data is provided by <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Open-Meteo.com</a> under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.
+                    </p>
+                </div>
             </section>
         );
     } else if (type === 'COOKIE') {

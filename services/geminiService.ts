@@ -129,8 +129,87 @@ export interface TransformationConfig {
 }
 
 export const transformToSeason = async (base64Image: string, config: TransformationConfig): Promise<string | null> => {
-   // Placeholder
-   return null;
+   try {
+     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+       const i = new Image();
+       i.crossOrigin = "Anonymous"; // Enable CORS
+       i.onload = () => resolve(i);
+       i.onerror = () => reject(new Error('Image load failed'));
+       i.src = base64Image;
+     });
+
+     const canvas = document.createElement('canvas');
+     canvas.width = img.width;
+     canvas.height = img.height;
+     const ctx = canvas.getContext('2d');
+     if (!ctx) return null;
+
+     ctx.drawImage(img, 0, 0);
+
+     const overlayForSeason = (season: TransformationConfig['season']) => {
+       if (season === 'spring') return 'rgba(46, 204, 113, 0.15)';
+       if (season === 'summer') return 'rgba(241, 196, 15, 0.15)';
+       if (season === 'autumn') return 'rgba(230, 126, 34, 0.18)';
+       return 'rgba(52, 152, 219, 0.20)';
+     };
+
+     const overlayForTime = (time: TransformationConfig['time']) => {
+       if (time === 'morning') return 'rgba(255, 255, 255, 0.08)';
+       if (time === 'noon') return 'rgba(255, 255, 255, 0.02)';
+       if (time === 'sunset') return 'rgba(231, 76, 60, 0.12)';
+       return 'rgba(0, 0, 0, 0.20)';
+     };
+
+     const overlayForWeather = (weather: TransformationConfig['weather']) => {
+       if (weather === 'sunny') return 'rgba(255, 255, 255, 0.05)';
+       if (weather === 'rainy') return 'rgba(52, 73, 94, 0.18)';
+       if (weather === 'windy') return 'rgba(149, 165, 166, 0.10)';
+       if (weather === 'misty') return 'rgba(236, 240, 241, 0.20)';
+       if (weather === 'hail') return 'rgba(189, 195, 199, 0.22)';
+       return 'rgba(44, 62, 80, 0.18)';
+     };
+
+     ctx.fillStyle = overlayForSeason(config.season);
+     ctx.fillRect(0, 0, canvas.width, canvas.height);
+     ctx.fillStyle = overlayForTime(config.time);
+     ctx.fillRect(0, 0, canvas.width, canvas.height);
+     ctx.fillStyle = overlayForWeather(config.weather);
+     ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+     if (config.style !== 'realistic') {
+       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+       const d = imgData.data;
+       for (let p = 0; p < d.length; p += 4) {
+         if (config.style === 'watercolor') {
+           d[p] = Math.min(255, d[p] * 0.98 + 5);
+           d[p+1] = Math.min(255, d[p+1] * 0.98 + 5);
+           d[p+2] = Math.min(255, d[p+2] * 0.98 + 5);
+         } else if (config.style === 'oil') {
+           d[p] = Math.min(255, d[p] * 1.05);
+           d[p+1] = Math.min(255, d[p+1] * 1.02);
+           d[p+2] = Math.min(255, d[p+2] * 0.98);
+         } else if (config.style === 'sketch') {
+           const avg = (d[p] + d[p+1] + d[p+2]) / 3;
+           d[p] = avg; d[p+1] = avg; d[p+2] = avg;
+         } else if (config.style === 'cyberpunk') {
+           d[p] = Math.min(255, d[p] * 0.9);
+           d[p+1] = Math.min(255, d[p+1] * 0.7);
+           d[p+2] = Math.min(255, d[p+2] * 1.2);
+         } else if (config.style === 'ghibli') {
+           d[p] = Math.min(255, d[p] * 1.04);
+           d[p+1] = Math.min(255, d[p+1] * 1.04);
+           d[p+2] = Math.min(255, d[p+2] * 0.98);
+         }
+       }
+       ctx.putImageData(imgData, 0, 0);
+     }
+
+     const result = canvas.toDataURL('image/jpeg', 0.92);
+     return result;
+   } catch (e) {
+     console.error('Season transform failed', e);
+     return null;
+   }
 };
 
 export const performWebSearch = async (query: string, lang: 'en' | 'nl'): Promise<{ summary: string, sources: { title: string, url: string }[] } | null> => {

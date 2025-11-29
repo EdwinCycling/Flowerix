@@ -41,8 +41,8 @@ export const PRICING_CONFIG: Record<UserTier, TierConfig> = {
             unlimited_history: false,
             aiSparks: false
         },
-        aiModelDisplay: 'Gemini 2.5 Flash Lite',
-        aiModelId: 'gemini-flash-lite-latest', 
+        aiModelDisplay: 'Gemini 2.0 Flash-Lite',
+        aiModelId: 'gemini-2.0-flash-lite', 
         color: 'bg-gray-500',
         buttonColor: 'bg-gray-600'
     },
@@ -62,8 +62,8 @@ export const PRICING_CONFIG: Record<UserTier, TierConfig> = {
             unlimited_history: true,
             aiSparks: true
         },
-        aiModelDisplay: 'AI Functies', // Renamed from Gemini 2.5 Flash
-        aiModelId: 'gemini-2.5-flash', 
+        aiModelDisplay: 'Gemini 2.5 Flash-Lite', 
+        aiModelId: 'gemini-2.5-flash-lite', 
         color: 'bg-slate-500',
         buttonColor: 'bg-slate-600',
         badge: 'Popular'
@@ -84,8 +84,8 @@ export const PRICING_CONFIG: Record<UserTier, TierConfig> = {
             unlimited_history: true,
             aiSparks: true
         },
-        aiModelDisplay: 'Volle AI', // Renamed from Gemini 3 Pro
-        aiModelId: 'gemini-3-pro-preview', 
+        aiModelDisplay: 'Gemini 2.5 Pro', 
+        aiModelId: 'gemini-2.5-pro', 
         color: 'bg-yellow-500',
         buttonColor: 'bg-yellow-600',
         badge: 'Best Value'
@@ -107,7 +107,7 @@ export const PRICING_CONFIG: Record<UserTier, TierConfig> = {
             aiSparks: true
         },
         aiModelDisplay: 'Gemini Ultra',
-        aiModelId: 'gemini-3-pro-preview',
+        aiModelId: 'gemini-2.5-pro',
         color: 'bg-cyan-500',
         buttonColor: 'bg-cyan-600'
     }

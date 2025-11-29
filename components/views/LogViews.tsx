@@ -190,20 +190,26 @@ export const LogFormView: React.FC<LogFormViewProps> = ({
                                         <input type="checkbox" checked={isMainPhoto} onChange={(e) => setIsMainPhoto(e.target.checked)} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
                                         <div className="flex items-center gap-2"><Icons.Image className="w-4 h-4 text-green-600" /><span>{t('set_as_main_photo')}</span></div>
                                     </label>
-                                    
                                     {allowSocial && (
                                         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg border border-indigo-100 dark:border-indigo-800">
                                             <input type="checkbox" checked={shareToSocial} onChange={(e) => setShareToSocial(e.target.checked)} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
                                             <div className="flex items-center gap-2"><Icons.Globe className="w-4 h-4 text-indigo-500" /><span>{t('share_to_timeline')}</span></div>
                                         </label>
                                     )}
-
                                     {allowNotebook && (
                                         <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg border border-yellow-100 dark:border-yellow-800">
                                             <input type="checkbox" checked={addToNotebook} onChange={(e) => setAddToNotebook(e.target.checked)} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
                                             <div className="flex items-center gap-2"><Icons.Notebook className="w-4 h-4 text-yellow-600" /><span>{t('add_to_notebook')}</span></div>
                                         </label>
                                     )}
+                                    {allowWeather && (homeLocation ? (
+                                        <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer bg-blue-50 dark:bg-gray-700 p-3 rounded-lg border border-blue-100 dark:border-gray-600">
+                                            <input type="checkbox" checked={includeWeather} onChange={(e) => setIncludeWeather(e.target.checked)} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                                            <div className="flex items-center gap-2"><Icons.Thermometer className="w-4 h-4 text-blue-500" /><span>{t('include_weather')}</span></div>
+                                        </label>
+                                    ) : (
+                                        <div className="text-sm text-gray-500 italic p-2 border border-dashed border-gray-300 rounded-lg text-center">Set a home location to enable weather features.</div>
+                                    ))}
                                 </div>
                             )}
                         </div>
@@ -215,8 +221,9 @@ export const LogFormView: React.FC<LogFormViewProps> = ({
                     )}
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('title_label')}</label>
-                    <input type="text" value={logTitle} onChange={(e) => setLogTitle(e.target.value)} className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white outline-none" placeholder={t('log_title_placeholder')} />
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('title_label')} *</label>
+                    <input type="text" value={logTitle} onChange={(e) => setLogTitle(e.target.value)} className={`w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-700 border ${!logTitle.trim() ? 'border-red-500 dark:border-red-500' : 'border-gray-200 dark:border-gray-600'} text-gray-900 dark:text-white outline-none`} placeholder={t('log_title_placeholder')} />
+                    {!logTitle.trim() && (<div className="text-red-600 text-xs mt-1">Titel is verplicht</div>)}
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('notes_label')}</label>

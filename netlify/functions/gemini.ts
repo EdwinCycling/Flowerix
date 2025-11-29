@@ -65,13 +65,28 @@ export const handler = async (event: any) => {
     };
     const lang = body.lang === "nl" ? "nl" : "en";
 
+    const getModelForTier = (tier: string) => {
+      switch (tier) {
+        case 'GOLD':
+        case 'DIAMOND':
+          return "gemini-2.5-pro"; 
+        case 'SILVER':
+          return "gemini-2.5-flash-lite";
+        case 'FREE':
+        default:
+          return "gemini-2.0-flash-lite";
+      }
+    };
+
     if (action === "identify") {
       const quota = await enforceUsage(1000);
       if (!quota.allowed) return { statusCode: 429, body: JSON.stringify({ error: "Error: Usage limit exceeded" }) };
+      
+      const modelId = getModelForTier(quota.tier);
       const base64Image = String(body.base64Image || "");
       const prompt = `Identify this plant. Provide name, scientific name, description, care instructions, and if it is typically an indoor plant. If you are unsure, provide the closest visual match. Always return a valid JSON object. Language: ${lang === "nl" ? "Dutch" : "English"}.`;
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite", // fallback; client decides active model if needed later
+        model: modelId, 
         contents: {
           parts: [
             { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } },
@@ -101,11 +116,13 @@ export const handler = async (event: any) => {
     if (action === "identifyMulti") {
       const quota = await enforceUsage(2000);
       if (!quota.allowed) return { statusCode: 429, body: JSON.stringify({ error: "Error: Usage limit exceeded" }) };
+      
+      const modelId = getModelForTier(quota.tier);
       const base64Images: string[] = Array.isArray(body.base64Images) ? body.base64Images : [];
       const prompt = `Identify the plant in these images. Return the top 3 most likely candidates. IMPORTANT: You must return at least one result. If the image is unclear or you are unsure, make a best guess based on visual features (leaves, shape, color). For each candidate provide: 1. Name 2. Scientific Name 3. Confidence (0-100) 4. Description 5. Soil & Care 6. Climate 7. Size 8. Pruning. Language: ${lang === "nl" ? "Dutch" : "English"}.`;
       const imageParts = base64Images.map(img => ({ inlineData: { mimeType: "image/jpeg", data: cleanBase64(img) } }));
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite",
+        model: modelId,
         contents: { parts: [...imageParts, { text: prompt }] },
         config: {
           responseMimeType: "application/json",
@@ -122,10 +139,12 @@ export const handler = async (event: any) => {
     if (action === "generateDescription") {
       const quota = await enforceUsage(500);
       if (!quota.allowed) return { statusCode: 429, body: JSON.stringify({ error: "Error: Usage limit exceeded" }) };
+      
+      const modelId = getModelForTier(quota.tier);
       const name = String(body.name || "");
       const prompt = `Provide details for plant '${name}'. Language: ${lang === "nl" ? "Dutch" : "English"}. JSON format.`;
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite",
+        model: modelId,
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -145,7 +164,7 @@ export const handler = async (event: any) => {
       const base64Image = String(body.base64Image || "");
       const prompt = "Is this image related to plants, gardening, nature, or landscapes? Return JSON with 'allowed' (boolean) and 'reason' (string) if false.";
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite",
+        model: "gemini-1.5-flash",
         contents: { parts: [ { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } }, { text: prompt } ] },
         config: {
           responseMimeType: "application/json",
@@ -160,6 +179,8 @@ export const handler = async (event: any) => {
     if (action === "analyzePlantHealth") {
       const quota = await enforceUsage(1500);
       if (!quota.allowed) return { statusCode: 429, body: JSON.stringify({ error: "Error: Usage limit exceeded" }) };
+      
+      const modelId = getModelForTier(quota.tier);
       const base64Image = String(body.base64Image || "");
       const type = String(body.type || "general");
       const instructionMap: Record<string, string> = {
@@ -174,7 +195,7 @@ export const handler = async (event: any) => {
       const instruction = instructionMap[type] || instructionMap.general;
       const prompt = `You are a plant expert. Analyze this image strictly focusing on the category: "${type}". Specific Instructions: ${instruction}. Do NOT provide information unrelated to "${type}". Language: ${lang === 'nl' ? 'Dutch' : 'English'}. Return a valid JSON.`;
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite",
+        model: modelId,
         contents: { parts: [ { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } }, { text: prompt } ] },
         config: { responseMimeType: "application/json", responseSchema: { type: Type.OBJECT, properties: { healthy: { type: Type.BOOLEAN }, diagnosis: { type: Type.STRING }, confidence: { type: Type.NUMBER }, symptoms: { type: Type.ARRAY, items: { type: Type.STRING } }, treatment: { type: Type.STRING } }, required: ["healthy", "diagnosis", "confidence", "symptoms", "treatment"] } }
       });
@@ -186,10 +207,12 @@ export const handler = async (event: any) => {
     if (action === "getPlantAdvice") {
       const quota = await enforceUsage(800);
       if (!quota.allowed) return { statusCode: 429, body: JSON.stringify({ error: "Error: Usage limit exceeded" }) };
+      
+      const modelId = getModelForTier(quota.tier);
       const criteria = body.criteria || {};
       const prompt = `Recommend 5 plants based on: ${JSON.stringify(criteria)}. Language: ${lang === 'nl' ? 'Dutch' : 'English'}. Return JSON.`;
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite",
+        model: modelId,
         contents: prompt,
         config: { responseMimeType: "application/json", responseSchema: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, scientificName: { type: Type.STRING }, reason: { type: Type.STRING }, matchPercentage: { type: Type.NUMBER } }, required: ["name", "scientificName", "reason", "matchPercentage"] } } }
       });
@@ -201,12 +224,14 @@ export const handler = async (event: any) => {
     if (action === "askPlantProfessor") {
       const quota = await enforceUsage(600);
       if (!quota.allowed) return { statusCode: 429, body: JSON.stringify({ error: "Error: Usage limit exceeded" }) };
+      
+      const modelId = getModelForTier(quota.tier);
       const base64Image = String(body.base64Image || "");
       const question = String(body.question || "");
       const languageName = lang === 'nl' ? 'Dutch' : 'English';
       const prompt = `You are "The Professor". Identify the plant, then answer: "${question}". Use clear formatting. Language: ${languageName}.`;
       const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash-lite",
+        model: modelId,
         contents: { parts: [ { inlineData: { mimeType: "image/jpeg", data: cleanBase64(base64Image) } }, { text: prompt } ] }
       });
       const text = response.text || "";
@@ -220,7 +245,7 @@ export const handler = async (event: any) => {
       const query = String(body.query || "");
       const prompt = `Search for '${query}'. Provide a summary and sources. Language: ${lang === 'nl' ? 'Dutch' : 'English'}.`;
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-preview",
+        model: "gemini-2.5-pro",
         contents: prompt,
         config: { tools: [{ googleSearch: {} }] }
       });
@@ -240,9 +265,11 @@ export const handler = async (event: any) => {
     if (action === "chat") {
       const quota = await enforceUsage(400);
       if (!quota.allowed) return { statusCode: 429, body: JSON.stringify({ error: "Error: Usage limit exceeded" }) };
+      
+      const modelId = getModelForTier(quota.tier);
       const prompt = String(body.prompt || "");
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: modelId,
         contents: { parts: [{ text: prompt }] }
       });
       const text = response.text || "";

@@ -1,11 +1,22 @@
 
 import { supabase } from '../supabaseClient';
 
+const base64ToBlob = (dataUrl: string): Blob => {
+    const parts = dataUrl.split(',');
+    const meta = parts[0];
+    const base64 = parts[1];
+    const mimeMatch = meta.match(/data:(.*?);base64/);
+    const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const binary = atob(base64);
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+};
+
 export const uploadPlantImage = async (base64: string, userId: string): Promise<string | null> => {
     try {
-        // 1. Convert Base64 to Blob
-        const res = await fetch(base64);
-        const blob = await res.blob();
+        const blob = base64ToBlob(base64);
         if (!blob.type.startsWith('image/')) return null;
         if (blob.size > 5 * 1024 * 1024) return null;
         
